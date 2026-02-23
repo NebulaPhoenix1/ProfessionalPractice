@@ -11,9 +11,11 @@ public class PrefabPlaceTool : EditorWindow
     //These let us draw the object list in Inspector
     SerializedObject serializedObject;
     SerializedProperty propPallete;
+    SerializedProperty propPlacementMask;
 
     //Placement settings
     bool matchSurfaceNormal = true;
+    [SerializeField] LayerMask placementMask = ~0; //Default to everything
 
     //Grid Settings
     bool useGrid = false;
@@ -43,6 +45,8 @@ public class PrefabPlaceTool : EditorWindow
         ScriptableObject target = this;
         serializedObject = new SerializedObject(target);
         propPallete = serializedObject.FindProperty("prefabPallete");
+        propPlacementMask = serializedObject.FindProperty("placementMask");
+
         //Hook into scene view updating 
         SceneView.duringSceneGui += OnSceneGUI;
     }
@@ -76,6 +80,7 @@ public class PrefabPlaceTool : EditorWindow
         //Placement Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Placement Settings", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers"));
         matchSurfaceNormal = EditorGUILayout.Toggle("Match Surface Normal", matchSurfaceNormal);
         GUILayout.EndVertical();
         EditorGUILayout.Space();
@@ -139,7 +144,7 @@ public class PrefabPlaceTool : EditorWindow
         //Shoot a ray cats
         Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         RaycastHit hit;
-        if(Physics.Raycast(ray, out hit))
+        if(Physics.Raycast(ray, out hit, Mathf.Infinity, placementMask, QueryTriggerInteraction.Ignore))
         {
             hasHit = true;
             currentPreviewPosition = hit.point;
