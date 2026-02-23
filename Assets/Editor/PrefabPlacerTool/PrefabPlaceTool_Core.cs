@@ -12,10 +12,12 @@ public partial class PrefabPlaceTool : EditorWindow
     SerializedObject serializedObject;
     SerializedProperty propPallete;
     SerializedProperty propPlacementMask;
+    SerializedProperty propParentContainer;
 
     //Placement settings
     bool matchSurfaceNormal = true;
     [SerializeField] LayerMask placementMask = ~0; //Default to everything
+    [SerializeField] Transform parentContainer = null; //Option to parent all spawned objects under a specific transform for organisation
 
     //Grid Settings
     bool useGrid = false;
@@ -54,6 +56,8 @@ public partial class PrefabPlaceTool : EditorWindow
         serializedObject = new SerializedObject(target);
         propPallete = serializedObject.FindProperty("prefabPallete");
         propPlacementMask = serializedObject.FindProperty("placementMask");
+        propParentContainer = serializedObject.FindProperty("parentContainer");
+
 
         //Hook into scene view updating 
         SceneView.duringSceneGui += OnSceneGUI;

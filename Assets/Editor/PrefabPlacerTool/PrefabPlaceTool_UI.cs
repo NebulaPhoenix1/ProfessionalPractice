@@ -27,6 +27,7 @@ public partial class PrefabPlaceTool : EditorWindow
         //Placement Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Placement Settings", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
         EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers"));
         matchSurfaceNormal = EditorGUILayout.Toggle("Match Surface Normal", matchSurfaceNormal);
         GUILayout.EndVertical();

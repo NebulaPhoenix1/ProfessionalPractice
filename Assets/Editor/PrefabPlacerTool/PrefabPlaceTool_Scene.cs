@@ -159,7 +159,11 @@ public partial class PrefabPlaceTool : EditorWindow
 
         // Apply Position + Local Offset
         newObj.transform.position = position + (finalRotation * currentItem.offset);
-
+        //Parent to container if set
+        if(parentContainer != null)
+        {
+            newObj.transform.parent = parentContainer;
+        }
         PrepareNextSpawn();
     }
 
