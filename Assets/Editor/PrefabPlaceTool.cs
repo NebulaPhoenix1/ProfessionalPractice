@@ -3,10 +3,18 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
+//Class so each prefab can have its own offset value
+[System.Serializable]
+public class PalleteEntry
+{
+    public GameObject prefab;
+    public Vector3 offset;
+}
+
 public class PrefabPlaceTool : EditorWindow
 {
     bool isToolActive = false;
-    [SerializeField] List<GameObject> prefabPallete = new List<GameObject>();
+    [SerializeField] List<PalleteEntry> prefabPallete = new List<PalleteEntry>();
     
     //These let us draw the object list in Inspector
     SerializedObject serializedObject;
@@ -30,8 +38,16 @@ public class PrefabPlaceTool : EditorWindow
     float minScale = 0.8f;
     float maxScale = 1.2f;
 
+    //Preview settings
     UnityEngine.Vector3 currentPreviewPosition; //Where ghost object is currently previewed
     bool hasHit = false; //Whether the raycast has hit a valid surface
+
+    //Ghost object values (these objects let us preview what we are going to place before we place it)
+    GameObject ghostObject;
+    int nextPrefabIndex = 0;
+    Quaternion nextRotation = Quaternion.identity;
+    float nextScale = 1.0f;
+
 
     [MenuItem("Tools/Prefab Place Tool")]
     public static void ShowWindow()
@@ -55,13 +71,15 @@ public class PrefabPlaceTool : EditorWindow
     private void OnDisable()
     {
         SceneView.duringSceneGui -= OnSceneGUI;
+        DestroyGhostObject();
     }
 
-    //The UI
+    //The UI Window with all the options we can change
     void OnGUI()
     {
         GUILayout.Label("Prefab Placer Tool", EditorStyles.boldLabel);
-        
+        EditorGUI.BeginChangeCheck(); //If a change happens, tells ghost object to instantly update
+
         //Button to activate/deactivate the tool
         GUI.backgroundColor = isToolActive ? Color.green : Color.red;
         if (GUILayout.Button(isToolActive ? "Deactivate Tool" : "Activate Tool"))
@@ -74,7 +92,6 @@ public class PrefabPlaceTool : EditorWindow
         //Prefab Pallete 
         serializedObject.Update();
         EditorGUILayout.PropertyField(propPallete, new GUIContent("Prefab Pallete"), true);
-        serializedObject.ApplyModifiedProperties();
         EditorGUILayout.Space();
 
         //Placement Settings
@@ -85,6 +102,8 @@ public class PrefabPlaceTool : EditorWindow
         GUILayout.EndVertical();
         EditorGUILayout.Space();
         
+        serializedObject.ApplyModifiedProperties();
+
         //Grid Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Grid Settings", EditorStyles.boldLabel);
@@ -136,8 +155,15 @@ public class PrefabPlaceTool : EditorWindow
         GUILayout.EndVertical();
     
         EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n(Ensure objects have colliders to snap to!)", MessageType.Info);
+
+        if(EditorGUI.EndChangeCheck() && isToolActive)
+        {
+            //If any settings changed, update the ghost object to reflect those changes
+            PrepareNextSpawn();
+        }
     }
 
+    //This is where the ray cast logic happens which tells us where to place objects as well as drawing ghost and grid previews    
     void OnSceneGUI(SceneView sceneView)
     {
         if(!isToolActive) return;
@@ -164,9 +190,16 @@ public class PrefabPlaceTool : EditorWindow
             }
             //Draw grid preview
             DrawGridPreview(currentPreviewPosition);
-            //Draw the ghost prefab
-            Handles.color = Color.cyan;
-            Handles.DrawWireCube(currentPreviewPosition, Vector3.one * (useGrid ? gridSize : 1.0f));
+            //Draw the ghost prefab with the correct rotation, scale and offset based on the surface normal and user settings
+            if(ghostObject != null && nextPrefabIndex < prefabPallete.Count)
+            {
+                PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
+                ghostObject.SetActive(true);
+                ghostObject.transform.localScale = Vector3.one * nextScale;
+                Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * nextRotation : nextRotation;
+                ghostObject.transform.rotation = finalRotation;
+                ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
+            }
             //Check for input
             Event e = Event.current;
             if(e.type == EventType.KeyDown && e.keyCode == KeyCode.Space)
@@ -178,14 +211,74 @@ public class PrefabPlaceTool : EditorWindow
         else
         {
             hasHit = false;
+            if(ghostObject != null) ghostObject.SetActive(false);
         }
         sceneView.Repaint();
+    }
+
+    //Function to pick the next prefab to spawn as well as calculating its random rotation and scale based on user settings, then creates the ghost object for previewing
+    void PrepareNextSpawn()
+    {
+        if(prefabPallete.Count == 0) return;
+        //Make a list of all the valid prefab indices (those that are not null) so we can pick from them when spawning
+        List<int> validIndices = new List<int>();
+        for(int i = 0; i < prefabPallete.Count; i++)
+        {
+            if(prefabPallete[i].prefab != null)
+            {
+                validIndices.Add(i);
+            }
+        }
+        if(validIndices.Count == 0) return;
+        //Pick random valid index
+        int index = validIndices[Random.Range(0, validIndices.Count)];
+        nextScale = randomScale ? Random.Range(minScale, maxScale) : 1.0f;
+        if(randomRotation)
+        {
+            nextRotation = Quaternion.Euler(
+                Random.Range(minRotation.x, maxRotation.x),
+                Random.Range(minRotation.y, maxRotation.y),
+                Random.Range(minRotation.z, maxRotation.z)
+            );
+        }
+        else
+        {
+            nextRotation = Quaternion.identity;
+        }
+        CreateGhostObject();
+    }
+
+    void CreateGhostObject()
+    {
+        DestroyGhostObject(); 
+        
+        if (prefabPallete.Count == 0 || nextPrefabIndex >= prefabPallete.Count) return;
+
+        GameObject prefab = prefabPallete[nextPrefabIndex].prefab;
+        if (prefab == null) return;
+
+        ghostObject = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        ghostObject.hideFlags = HideFlags.HideAndDontSave; //Hide from hierarchy and prevent saving
+        
+        Collider[] colliders = ghostObject.GetComponentsInChildren<Collider>();
+        foreach(Collider col in colliders)
+        {
+            col.enabled = false;
+        }
+    }
+
+    void DestroyGhostObject()
+    {
+        if (ghostObject != null)
+        {
+            DestroyImmediate(ghostObject);
+        }
     }
 
     void DrawGridPreview(Vector3 center)
     {
         if(!useGrid) return;
-        Handles.color = new Color(1f,1f,1f,0.5f);
+        Handles.color = new Color(1f,1f,1f,1f);
         int lines = 4;
         float size = gridSize * lines;
         //Draw X lines
@@ -210,78 +303,49 @@ public class PrefabPlaceTool : EditorWindow
 
     void SpawnObject(Vector3 position, Vector3 normal)
     {
-        if(prefabPallete.Count == 0)
-        {
-            Debug.LogWarning("Prefab Pallete is empty! Please add some prefabs to spawn.");
-            return;
-        }
-        //Pick random prefab
-        GameObject prefab = prefabPallete[Random.Range(0, prefabPallete.Count)];
-        if(prefab == null)
-        {
-            Debug.LogWarning("One of the prefabs in the pallete is null! Please remove any empty slots.");
-            return;
-        }
-        //Instantiate
-        GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-        //Register Undo
+        //Return early if no valid prefabs to spawn
+        if(prefabPallete.Count == 0 || nextPrefabIndex >= prefabPallete.Count) return;
+        //Instantiate the prefab, apply rotation, scale and offset based on settings and surface normal, then prepare the next spawn
+        PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
+        if(currentItem.prefab == null) return;
+        GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(currentItem.prefab);
         Undo.RegisterCreatedObjectUndo(newObj, "Spawned Prefab");
-        //Set Pos
-        newObj.transform.position = position;
-        //Apply surface normal 
-        if(matchSurfaceNormal)
-        {
-            newObj.transform.up = normal;
-        }
+        newObj.transform.position = position + currentItem.offset;
+        newObj.transform.localScale = Vector3.one * nextScale;
+        //Calculate rotation
+        Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, normal) * nextRotation : nextRotation;
+        newObj.transform.rotation = finalRotation;
 
-        //Apply rotation
-        if(randomRotation)
-        {
-            Vector3 randomRotation = new Vector3(
-                Random.Range(minRotation.x, maxRotation.x),
-                Random.Range(minRotation.y, maxRotation.y),
-                Random.Range(minRotation.z, maxRotation.z)
-            );
-            if(matchSurfaceNormal)
-            {
-                newObj.transform.Rotate(randomRotation, Space.Self);
-            }
-            else
-            {
-                newObj.transform.Rotate(randomRotation, Space.World);
-            }
-        }
-        //Apply scale
-        if(randomScale)
-        {
-            float scale = Random.Range(minScale, maxScale);
-            newObj.transform.localScale = Vector3.one * scale;
-        }
+        // Apply Position + Local Offset
+        newObj.transform.position = position + (finalRotation * currentItem.offset);
+
+        PrepareNextSpawn();
     }
 
+    //Function to replace selected objects with random prefabs from the pallete, applying the same rotation, scale and parent as the original object as well as the prefab offset
     void ReplaceSelectedObjects()
     {
         GameObject[] selectedObjects = Selection.gameObjects;
-        if(selectedObjects.Length == 0 || prefabPallete.Count == 0)
-        {
-            Debug.LogWarning("No objects selected or prefab pallete is empty! Please select some objects and add prefabs to the pallete.");
-            return;
-        }
+        if(selectedObjects.Length == 0 || prefabPallete.Count == 0) return;
+        
         foreach(GameObject obj in selectedObjects)
         {
-            //Pick new prefab
-            GameObject prefab = prefabPallete[Random.Range(0, prefabPallete.Count)];
-            GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            //Copy transform data before destroying
-            newObj.transform.position = obj.transform.position;
+            // Just picking a basic random one here for replacement
+            PalleteEntry currentItem = prefabPallete[Random.Range(0, prefabPallete.Count)];
+            if (currentItem.prefab == null) continue;
+
+            GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(currentItem.prefab);
+            
+            // Apply original transform data
             newObj.transform.rotation = obj.transform.rotation;
             newObj.transform.localScale = obj.transform.localScale;
             newObj.transform.parent = obj.transform.parent;
-            //Register Undo
+
+            // Apply position WITH the new prefab's offset taken into account
+            newObj.transform.position = obj.transform.position + (newObj.transform.rotation * currentItem.offset);
+            
             Undo.RegisterCreatedObjectUndo(newObj, "Replaced Object");
-            //Destroy old object
             Undo.DestroyObjectImmediate(obj);   
         }
     }
-
 }
