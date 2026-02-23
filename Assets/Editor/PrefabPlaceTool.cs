@@ -12,6 +12,9 @@ public class PrefabPlaceTool : EditorWindow
     SerializedObject serializedObject;
     SerializedProperty propPallete;
 
+    //Placement settings
+    bool matchSurfaceNormal = true;
+
     //Grid Settings
     bool useGrid = false;
     float gridSize = 1.0f;
@@ -68,6 +71,13 @@ public class PrefabPlaceTool : EditorWindow
         serializedObject.Update();
         EditorGUILayout.PropertyField(propPallete, new GUIContent("Prefab Pallete"), true);
         serializedObject.ApplyModifiedProperties();
+        EditorGUILayout.Space();
+
+        //Placement Settings
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Placement Settings", EditorStyles.boldLabel);
+        matchSurfaceNormal = EditorGUILayout.Toggle("Match Surface Normal", matchSurfaceNormal);
+        GUILayout.EndVertical();
         EditorGUILayout.Space();
         
         //Grid Settings
@@ -213,18 +223,28 @@ public class PrefabPlaceTool : EditorWindow
         Undo.RegisterCreatedObjectUndo(newObj, "Spawned Prefab");
         //Set Pos
         newObj.transform.position = position;
+        //Apply surface normal 
+        if(matchSurfaceNormal)
+        {
+            newObj.transform.up = normal;
+        }
+
         //Apply rotation
         if(randomRotation)
         {
-            newObj.transform.rotation = Quaternion.Euler(
+            Vector3 randomRotation = new Vector3(
                 Random.Range(minRotation.x, maxRotation.x),
                 Random.Range(minRotation.y, maxRotation.y),
                 Random.Range(minRotation.z, maxRotation.z)
             );
-        }
-        else
-        {
-            newObj.transform.up = normal; //Align to surface normal if no random rotation
+            if(matchSurfaceNormal)
+            {
+                newObj.transform.Rotate(randomRotation, Space.Self);
+            }
+            else
+            {
+                newObj.transform.Rotate(randomRotation, Space.World);
+            }
         }
         //Apply scale
         if(randomScale)
