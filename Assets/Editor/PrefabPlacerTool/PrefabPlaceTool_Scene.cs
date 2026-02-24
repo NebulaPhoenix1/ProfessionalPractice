@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using NUnit.Framework;
 
 public partial class PrefabPlaceTool : EditorWindow
 {
@@ -31,21 +33,47 @@ public partial class PrefabPlaceTool : EditorWindow
             }
             //Draw grid preview
             DrawGridPreview(currentPreviewPosition);
+            //Overlap checking
+            bool isBlocked = false;
+            if(preventOverlap)
+            {
+                //Check slightly above the ground
+                Vector3 checkPosition = currentPreviewPosition + (hit.normal * overlapRadius);
+                isBlocked = Physics.CheckSphere(checkPosition, overlapRadius, overlapMask);
+                //Draw overlap check sphere in scene view for debugging
+                Handles.color = isBlocked ? new Color(1f,0f,0f,0.5f) : new Color(0f,1f,0f,0.5f);
+                Handles.DrawSolidDisc(checkPosition, Vector3.up, overlapRadius);
+                Handles.color = isBlocked ? Color.red : Color.green;
+                Handles.DrawWireDisc(checkPosition, hit.normal, overlapRadius);
+            }
+
+
             //Draw the ghost prefab with the correct rotation, scale and offset based on the surface normal and user settings
             if(ghostObject != null && nextPrefabIndex < prefabPallete.Count)
             {
-                PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
-                ghostObject.SetActive(true);
-                ghostObject.transform.localScale = Vector3.one * nextScale;
-                Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * nextRotation : nextRotation;
-                ghostObject.transform.rotation = finalRotation;
-                ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
+                if(isBlocked)
+                {
+                    ghostObject.SetActive(false);
+                    return;
+                }
+                else
+                {
+                    PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
+                    ghostObject.SetActive(true);
+                    ghostObject.transform.localScale = Vector3.one * nextScale;
+                    Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * nextRotation : nextRotation;
+                    ghostObject.transform.rotation = finalRotation;
+                    ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
+                }
             }
             //Check for input
             Event e = Event.current;
             if(e.type == EventType.KeyDown && e.keyCode == KeyCode.Space)
             {
-                SpawnObject(currentPreviewPosition, hit.normal);
+                if(!isBlocked)
+                {
+                   SpawnObject(currentPreviewPosition, hit.normal); 
+                }
                 e.Use();
             }
         }
@@ -125,19 +153,16 @@ public partial class PrefabPlaceTool : EditorWindow
         //Draw X lines
         for(int i = -lines; i <= lines; i++)
         {
-            Vector3 start = center + new Vector3(i * gridSize, 0, -size);
-            Vector3 end = center + new Vector3(i * gridSize, 0, size);
-            start.y = center.y;
-            end.y = center.y;
+            Vector3 start = center + new Vector3(-size, 0, i * gridSize);
+            Vector3 end = center + new Vector3(size, 0, i * gridSize);
             Handles.DrawLine(start, end);
         }
+        
         //Draw Z lines
         for(int j = -lines; j <= lines; j++)
         {
-            Vector3 start = center + new Vector3(-size, 0, j * gridSize);
-            Vector3 end = center + new Vector3(size, 0, j * gridSize);
-            start.y = center.y;
-            end.y = center.y;
+            Vector3 start = center + new Vector3(j * gridSize, 0, -size);
+            Vector3 end = center + new Vector3(j * gridSize, 0, size);
             Handles.DrawLine(start, end);
         }
     }

@@ -13,11 +13,17 @@ public partial class PrefabPlaceTool : EditorWindow
     SerializedProperty propPallete;
     SerializedProperty propPlacementMask;
     SerializedProperty propParentContainer;
+    SerializedProperty propOverlapMask; //Which layers we are allowed to overlap with if the collision check is enabled
 
     //Placement settings
     bool matchSurfaceNormal = true;
     [SerializeField] LayerMask placementMask = ~0; //Default to everything
     [SerializeField] Transform parentContainer = null; //Option to parent all spawned objects under a specific transform for organisation
+    //Overlap prevention settings
+    //If enabled, the tool will check for existing colliders within a certain radius of the spawn point and prevent spawning if any are found. This can help prevent accidentally placing multiple objects on top of each other.
+    bool preventOverlap = false;
+    float overlapRadius = 0.5f;
+    [SerializeField] LayerMask overlapMask = ~0; //Default to everything; layers to check for collisions with.
 
     //Grid Settings
     bool useGrid = false;
@@ -57,7 +63,7 @@ public partial class PrefabPlaceTool : EditorWindow
         propPallete = serializedObject.FindProperty("prefabPallete");
         propPlacementMask = serializedObject.FindProperty("placementMask");
         propParentContainer = serializedObject.FindProperty("parentContainer");
-
+        propOverlapMask = serializedObject.FindProperty("overlapMask");
 
         //Hook into scene view updating 
         SceneView.duringSceneGui += OnSceneGUI;

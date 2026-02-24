@@ -30,6 +30,14 @@ public partial class PrefabPlaceTool : EditorWindow
         EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
         EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers"));
         matchSurfaceNormal = EditorGUILayout.Toggle("Match Surface Normal", matchSurfaceNormal);
+        EditorGUILayout.Space();
+        //Overlap prevention settings
+        preventOverlap = EditorGUILayout.Toggle(new GUIContent("Prevent Overlap", "Stops spawning if there are existing colliders within the overlap radius"), preventOverlap);
+        if(preventOverlap)
+        {
+            overlapRadius = EditorGUILayout.Slider("Overlap Check Radius", overlapRadius, 0.1f, 10.0f);
+            EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
+        }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
         
