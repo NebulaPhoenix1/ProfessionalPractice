@@ -21,21 +21,21 @@ public partial class PrefabPlaceTool : EditorWindow
         
         //Prefab Pallete 
         serializedObject.Update();
-        EditorGUILayout.PropertyField(propPallete, new GUIContent("Prefab Pallete"), true);
+        EditorGUILayout.PropertyField(propPallete, new GUIContent("Prefab Pallete", "List of random prefabs to spawn, a custom offset can be set for each."), true);
         EditorGUILayout.Space();
 
         //Placement Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Placement Settings", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
-        EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers"));
-        matchSurfaceNormal = EditorGUILayout.Toggle("Match Surface Normal", matchSurfaceNormal);
+        EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers", "The tool will only place objects on colliders on these layers."));
+        matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
         EditorGUILayout.Space();
         //Overlap prevention settings
         preventOverlap = EditorGUILayout.Toggle(new GUIContent("Prevent Overlap", "Stops spawning if there are existing colliders within the overlap radius"), preventOverlap);
         if(preventOverlap)
         {
-            overlapRadius = EditorGUILayout.Slider("Overlap Check Radius", overlapRadius, 0.1f, 10.0f);
+            overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
             EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
         }
         GUILayout.EndVertical();
@@ -46,12 +46,12 @@ public partial class PrefabPlaceTool : EditorWindow
         //Grid Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Grid Settings", EditorStyles.boldLabel);
-        useGrid = EditorGUILayout.Toggle("Enable Grid Snapping", useGrid);
+        useGrid = EditorGUILayout.Toggle(new GUIContent("Enable Grid Snapping","If enabled, objects will snap to a grid when placed"), useGrid);
         //Grid settings only show if the grid is enabled
         if(useGrid)
         {
-            gridSize = EditorGUILayout.Slider("Grid Size", gridSize, 0.1f, 10.0f);
-            snapHeight = EditorGUILayout.Toggle("Snap to Ground Height", snapHeight);
+            gridSize = EditorGUILayout.Slider(new GUIContent("Grid Size", "The size of the grid to snap to"), gridSize, 0.1f, 10.0f);
+            snapHeight = EditorGUILayout.Toggle(new GUIContent("Snap to Ground Height", "If enabled, objects will be snapped to the height of the grid"), snapHeight);
             //Preset buttons
             GUILayout.BeginHorizontal();
             if(GUILayout.Button("0.5m")) gridSize = 0.5f;
@@ -65,13 +65,13 @@ public partial class PrefabPlaceTool : EditorWindow
         //Randomisation Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Randomisation Settings", EditorStyles.boldLabel);
-        randomRotation = EditorGUILayout.Toggle("Random Rotation", randomRotation);
+        randomRotation = EditorGUILayout.Toggle(new GUIContent("Random Rotation", "If enabled, spawned objects will be rotated randomly within the specified range"), randomRotation);
         if(randomRotation)
         {
-            minRotation = EditorGUILayout.Vector3Field("Min Rotation", minRotation);
-            maxRotation = EditorGUILayout.Vector3Field("Max Rotation", maxRotation);
+            minRotation = EditorGUILayout.Vector3Field(new GUIContent("Min Rotation", "The minimum rotation to apply when randomising"), minRotation);
+            maxRotation = EditorGUILayout.Vector3Field(new GUIContent("Max Rotation", "The maximum rotation to apply when randomising"), maxRotation);
         }
-        randomScale = EditorGUILayout.Toggle("Random Scale", randomScale);
+        randomScale = EditorGUILayout.Toggle(new GUIContent("Random Scale", "If enabled, spawned objects will be scaled randomly within the specified range"), randomScale);
         if(randomScale)
         {
             GUILayout.BeginHorizontal();
