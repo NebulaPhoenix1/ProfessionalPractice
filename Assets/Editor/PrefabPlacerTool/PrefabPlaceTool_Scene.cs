@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using NUnit.Framework;
 
 public partial class PrefabPlaceTool : EditorWindow
 {
@@ -10,81 +8,147 @@ public partial class PrefabPlaceTool : EditorWindow
     void OnSceneGUI(SceneView sceneView)
     {
         if(!isToolActive) return;
-        //Shoot a ray cats
-        Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
-        RaycastHit hit;
-        if(Physics.Raycast(ray, out hit, Mathf.Infinity, placementMask, QueryTriggerInteraction.Ignore))
+
+        Event e = Event.current;
+
+        // Failsafe: Ensure ghost object exists
+        if (ghostObject == null && !isErasing && prefabPallete.Count > 0)
         {
-            hasHit = true;
+            PrepareNextSpawn();
+        }
+
+        //Tell Unity not to select objects or consume hotkeys
+        int controlID = GUIUtility.GetControlID("PrefabPlaceTool".GetHashCode(), FocusType.Passive);
+        if (e.type == EventType.Layout)
+        {
+            HandleUtility.AddDefaultControl(controlID);
+        }
+
+        //Raycast
+        // We temporarily turn off the ghost object so it is impossible for our raycast to hit it.
+        if (ghostObject != null) ghostObject.SetActive(false);
+
+        Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+        hasHit = Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, placementMask, QueryTriggerInteraction.Ignore);
+        bool isBlocked = false;
+
+        if (hasHit)
+        {
             currentPreviewPosition = hit.point;
-            //Apply grid maths
+            
+            // Apply grid maths
             if(useGrid)
             {
                 currentPreviewPosition.x = Mathf.Round(currentPreviewPosition.x / gridSize) * gridSize;
                 currentPreviewPosition.z = Mathf.Round(currentPreviewPosition.z / gridSize) * gridSize;
-                if(snapHeight)
-                {
-                    currentPreviewPosition.y = Mathf.Round(currentPreviewPosition.y / gridSize) * gridSize;
-                }
-                else
-                {
-                    currentPreviewPosition.y = hit.point.y;
-                }
+                currentPreviewPosition.y = snapHeight ? Mathf.Round(currentPreviewPosition.y / gridSize) * gridSize : hit.point.y;
             }
-            //Draw grid preview
-            DrawGridPreview(currentPreviewPosition);
-            //Overlap checking
-            bool isBlocked = false;
+            
+            // Overlap checking
             if(preventOverlap)
             {
-                //Check slightly above the ground
                 Vector3 checkPosition = currentPreviewPosition + (hit.normal * overlapRadius);
                 isBlocked = Physics.CheckSphere(checkPosition, overlapRadius, overlapMask);
-                //Draw overlap check sphere in scene view for debugging
-                Handles.color = isBlocked ? new Color(1f,0f,0f,0.5f) : new Color(0f,1f,0f,0.5f);
-                Handles.DrawSolidDisc(checkPosition, Vector3.up, overlapRadius);
-                Handles.color = isBlocked ? Color.red : Color.green;
-                Handles.DrawWireDisc(checkPosition, hit.normal, overlapRadius);
             }
+        }
 
+        //Update ghost object preview
+        // Now that the raycast is done, we can turn the ghost object back on and move it!
+        if (hasHit && !isBlocked && !isErasing && ghostObject != null && nextPrefabIndex < prefabPallete.Count)
+        {
+            PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
+            ghostObject.SetActive(true); 
+            ghostObject.transform.localScale = Vector3.one * nextScale;
+            Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * nextRotation : nextRotation;
+            ghostObject.transform.rotation = finalRotation;
+            ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
+        }
 
-            //Draw the ghost prefab with the correct rotation, scale and offset based on the surface normal and user settings
-            if(ghostObject != null && nextPrefabIndex < prefabPallete.Count)
+        //Input handling
+        if (e.type == EventType.KeyDown)
+        {
+            if (e.keyCode == KeyCode.Space)
             {
-                if(isBlocked)
+                if (hasHit && !isBlocked && !isErasing)
                 {
-                    ghostObject.SetActive(false);
-                    return;
+                    SpawnObject(currentPreviewPosition, hit.normal); 
                 }
-                else
-                {
-                    PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
-                    ghostObject.SetActive(true);
-                    ghostObject.transform.localScale = Vector3.one * nextScale;
-                    Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * nextRotation : nextRotation;
-                    ghostObject.transform.rotation = finalRotation;
-                    ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
-                }
+                e.Use(); 
             }
-            //Check for input
-            Event e = Event.current;
-            if(e.type == EventType.KeyDown && e.keyCode == KeyCode.Space)
+            else if (e.keyCode == KeyCode.Backspace && e.shift)
             {
-                if(!isBlocked)
-                {
-                   SpawnObject(currentPreviewPosition, hit.normal); 
-                }
+                isErasing = true;
+                DeleteObjectUnderCursor(ray);
                 e.Use();
             }
         }
-        else
+        else if (e.type == EventType.KeyUp && e.keyCode == KeyCode.Backspace)
         {
-            hasHit = false;
-            if(ghostObject != null) ghostObject.SetActive(false);
+            isErasing = false;
         }
-        sceneView.Repaint();
-    }
+        else if (isErasing && (e.type == EventType.MouseDrag || e.type == EventType.MouseMove))
+        {
+            if (e.shift)
+            {
+                DeleteObjectUnderCursor(ray);
+                e.Use();
+            }
+            else
+            {
+                isErasing = false;
+            }
+        }
 
+        //Visuals 
+        if (e.type == EventType.Repaint)
+        {
+            if(isErasing)
+            {
+                Vector3 brushPos;
+                Vector3 brushNormal;
+
+                //Try hitting an erasable object
+                if (Physics.Raycast(ray, out RaycastHit eraseHit, Mathf.Infinity, eraseMask, QueryTriggerInteraction.Ignore))
+                {
+                    brushPos = eraseHit.point;
+                    brushNormal = eraseHit.normal;
+                }
+                //Hitting the ground/placement surface
+                else if (hasHit)
+                {
+                    brushPos = hit.point;
+                    brushNormal = hit.normal;
+                }
+                //Float the circle in front of the camera
+                else
+                {
+                    brushPos = ray.GetPoint(10f); // 10 units in front of the camera
+                    brushNormal = -ray.direction; // Face the camera
+                }
+                Handles.color = new Color(1f, 0f, 0f, 0.4f);
+                Handles.DrawSolidDisc(brushPos, brushNormal, 0.5f);
+                Handles.color = Color.red;
+                Handles.DrawWireDisc(brushPos, brushNormal, 0.5f);
+            }
+            else if(hasHit)
+            {
+                DrawGridPreview(currentPreviewPosition);
+                if (preventOverlap)
+                {
+                    Vector3 checkPos = currentPreviewPosition + (hit.normal * overlapRadius);
+                    Handles.color = isBlocked ? new Color(1f, 0f, 0f, 0.5f) : new Color(0f, 1f, 0f, 0.5f);
+                    Handles.DrawSolidDisc(checkPos, Vector3.up, overlapRadius);
+                    Handles.color = isBlocked ? Color.red : Color.green;
+                    Handles.DrawWireDisc(checkPos, hit.normal, overlapRadius);
+                }
+            }
+        }
+        // Only refresh the scene view when the user actually interacts, avoiding infinite loops
+        if(e.type == EventType.MouseMove || e.type == EventType.MouseDrag || e.type == EventType.KeyDown || e.type == EventType.KeyUp)
+        {
+            sceneView.Repaint(); 
+        }
+    }
     //Function to pick the next prefab to spawn as well as calculating its random rotation and scale based on user settings, then creates the ghost object for previewing
     void PrepareNextSpawn()
     {
@@ -211,11 +275,29 @@ public partial class PrefabPlaceTool : EditorWindow
             newObj.transform.localScale = obj.transform.localScale;
             newObj.transform.parent = obj.transform.parent;
 
-            // Apply position WITH the new prefab's offset taken into account
+            // Apply position with the new prefab's offset taken into account
             newObj.transform.position = obj.transform.position + (newObj.transform.rotation * currentItem.offset);
             
             Undo.RegisterCreatedObjectUndo(newObj, "Replaced Object");
             Undo.DestroyObjectImmediate(obj);   
         }
+    }
+    
+
+    void DeleteObjectUnderCursor(Ray ray)
+    {
+       if(Physics.Raycast(ray, out RaycastHit eraseHit, Mathf.Infinity, eraseMask, QueryTriggerInteraction.Ignore))
+       {
+           GameObject objToDelete = eraseHit.collider.gameObject;
+           GameObject rootToDelete = PrefabUtility.GetOutermostPrefabInstanceRoot(objToDelete);
+           if(rootToDelete != null)
+           {
+               Undo.DestroyObjectImmediate(rootToDelete);
+           }
+           else
+           {
+               Undo.DestroyObjectImmediate(objToDelete);
+           }
+       }
     }
 }

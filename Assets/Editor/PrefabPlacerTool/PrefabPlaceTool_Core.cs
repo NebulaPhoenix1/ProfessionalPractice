@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public partial class PrefabPlaceTool : EditorWindow
 {
     bool isToolActive = false;
+    bool isErasing = false;
     [SerializeField] List<PalleteEntry> prefabPallete = new List<PalleteEntry>();
     
     //These let us draw the object list in Inspector
@@ -14,6 +15,7 @@ public partial class PrefabPlaceTool : EditorWindow
     SerializedProperty propPlacementMask;
     SerializedProperty propParentContainer;
     SerializedProperty propOverlapMask; //Which layers we are allowed to overlap with if the collision check is enabled
+    SerializedProperty propEraseMask; //Which layers we are allowed to erase when in erase mode
 
     //Placement settings
     bool matchSurfaceNormal = true;
@@ -24,6 +26,7 @@ public partial class PrefabPlaceTool : EditorWindow
     bool preventOverlap = false;
     float overlapRadius = 0.5f;
     [SerializeField] LayerMask overlapMask = ~0; //Default to everything; layers to check for collisions with.
+    [SerializeField] LayerMask eraseMask = ~0; //Default to everything; layers that can be erased when in erase mode
 
     //Grid Settings
     bool useGrid = false;
@@ -64,6 +67,7 @@ public partial class PrefabPlaceTool : EditorWindow
         propPlacementMask = serializedObject.FindProperty("placementMask");
         propParentContainer = serializedObject.FindProperty("parentContainer");
         propOverlapMask = serializedObject.FindProperty("overlapMask");
+        propEraseMask = serializedObject.FindProperty("eraseMask");
 
         //Hook into scene view updating 
         SceneView.duringSceneGui += OnSceneGUI;
