@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public partial class PrefabPlaceTool : EditorWindow
 {
@@ -37,6 +38,15 @@ public partial class PrefabPlaceTool : EditorWindow
         EditorGUILayout.PropertyField(propEraseMask, new GUIContent("Eraseable Layers", "The tool will only erase objects on colliders on these layers."));
         matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
         EditorGUILayout.Space();
+
+        //Override prefab layer 
+        overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
+        if(overridePrefabLayer)
+        {
+            spawnLayer = EditorGUILayout.LayerField(new GUIContent("Spawn Layer", "The layer to set spawned objects to"), spawnLayer);
+            EditorGUILayout.Space();
+        }
+
         //Overlap prevention settings
         preventOverlap = EditorGUILayout.Toggle(new GUIContent("Prevent Overlap", "Stops spawning if there are existing colliders within the overlap radius"), preventOverlap);
         if(preventOverlap)

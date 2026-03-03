@@ -272,6 +272,11 @@ public partial class PrefabPlaceTool : EditorWindow
         {
             newObj.transform.parent = parentContainer;
         }
+        //Overrude layer if enabled
+        if(overridePrefabLayer)
+        {
+            SetLayerRecursively(newObj, spawnLayer);
+        }
         PrepareNextSpawn();
     }
 
@@ -319,4 +324,16 @@ public partial class PrefabPlaceTool : EditorWindow
            }
        }
     }
+
+    //Sets the layer of the object and all its children recursively, used for the layer override feature
+    void SetLayerRecursively(GameObject obj, int layer)
+    {
+        if(obj == null) return;
+        //Get every transform attached to this object and its children (true for inactive objects)
+        Transform[] allTransforms = obj.GetComponentsInChildren<Transform>(true);
+        foreach(Transform t in allTransforms)
+        {
+            t.gameObject.layer = layer;
+        }
+    } 
 }

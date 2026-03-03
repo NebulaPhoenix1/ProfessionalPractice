@@ -21,6 +21,11 @@ public partial class PrefabPlaceTool : EditorWindow
     bool matchSurfaceNormal = true;
     [SerializeField] LayerMask placementMask = ~0; //Default to everything
     [SerializeField] Transform parentContainer = null; //Option to parent all spawned objects under a specific transform for organisation
+    
+    //Layer override settings
+    bool overridePrefabLayer = false;
+    int spawnLayer = 0; //Default layer
+    
     //Overlap prevention settings
     //If enabled, the tool will check for existing colliders within a certain radius of the spawn point and prevent spawning if any are found. This can help prevent accidentally placing multiple objects on top of each other.
     bool preventOverlap = false;
@@ -56,7 +61,7 @@ public partial class PrefabPlaceTool : EditorWindow
     float nextScale = 1.0f;
 
 
-    [MenuItem("Tools/Prefab Place Tool")]
+    [MenuItem("Tools/Open Prefab Place Tool Window")]
     public static void ShowWindow()
     {
         GetWindow<PrefabPlaceTool>("Prefab Place Tool");
