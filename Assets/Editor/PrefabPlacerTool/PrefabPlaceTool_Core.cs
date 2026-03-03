@@ -33,6 +33,10 @@ public partial class PrefabPlaceTool : EditorWindow
     float gridSize = 1.0f;
     bool snapHeight = false;
 
+    //Rotation snapping settings
+    bool snapRotation = false;
+    float snapAngle = 90.0f;
+
     //Randomisation Settings
     bool randomRotation = false;
     UnityEngine.Vector3 minRotation = UnityEngine.Vector3.zero;

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 
 public partial class PrefabPlaceTool : EditorWindow
 {
@@ -67,6 +68,7 @@ public partial class PrefabPlaceTool : EditorWindow
         //Input handling
         if (e.type == EventType.KeyDown)
         {
+            //Detecting spacebar for placement 
             if (e.keyCode == KeyCode.Space)
             {
                 if (hasHit && !isBlocked && !isErasing)
@@ -75,6 +77,19 @@ public partial class PrefabPlaceTool : EditorWindow
                 }
                 e.Use(); 
             }
+            else if (e.keyCode == KeyCode.LeftBracket) //Rotate Left
+            {
+                float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : 45; // Default to 45 degrees if snapping is off or angle is invalid
+                nextRotation *= Quaternion.Euler(0, -rotationAmount, 0);
+                e.Use();
+            }
+            else if (e.keyCode == KeyCode.RightBracket) //Rotate Right
+            {
+                float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : 45; // Default to 45 degrees if snapping is off or angle is invalid
+                nextRotation *= Quaternion.Euler(0, rotationAmount, 0);
+                e.Use();
+            }
+            //Detecting shift + backspace for erasing
             else if (e.keyCode == KeyCode.Backspace && e.shift)
             {
                 isErasing = true;
@@ -174,9 +189,13 @@ public partial class PrefabPlaceTool : EditorWindow
                 Random.Range(minRotation.z, maxRotation.z)
             );
         }
-        else
+        else if(snapRotation && snapAngle > 0)
         {
-            nextRotation = Quaternion.identity;
+            Vector3 euler = nextRotation.eulerAngles;
+            euler.x = Mathf.Round(euler.x / snapAngle) * snapAngle;
+            euler.y = Mathf.Round(euler.y / snapAngle) * snapAngle;
+            euler.z = Mathf.Round(euler.z / snapAngle) * snapAngle;
+            nextRotation = Quaternion.Euler(euler);
         }
         CreateGhostObject();
     }

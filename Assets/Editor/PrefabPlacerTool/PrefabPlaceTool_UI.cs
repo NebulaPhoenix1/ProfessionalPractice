@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public partial class PrefabPlaceTool : EditorWindow
 {
+    Vector2 scrollPosition;
+
    //The UI Window with all the options we can change
     void OnGUI()
     {
@@ -19,6 +21,9 @@ public partial class PrefabPlaceTool : EditorWindow
         GUI.backgroundColor = Color.white;
         EditorGUILayout.Space();
         
+        //Start scroll view for all settings
+        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
         //Prefab Pallete 
         serializedObject.Update();
         EditorGUILayout.PropertyField(propPallete, new GUIContent("Prefab Pallete", "List of random prefabs to spawn, a custom offset can be set for each."), true);
@@ -62,11 +67,42 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
+        //Snap Rotation Settings
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Rotation Snapping Settings", EditorStyles.boldLabel);
+        //Mutually exclusive logic for snap rotation and random rotation (they can't both be on at the same time)
+        bool previousSnap = snapRotation;
+        snapRotation = EditorGUILayout.Toggle(new GUIContent("Enable Rotation Snapping", "If enabled, objects will snap to specific rotation angles when placed"), snapRotation);
+        if(snapRotation && !previousSnap)
+        {
+            randomRotation = false; //Turn off random rotation if snap rotation is enabled
+        }
+        if(snapRotation)
+        {
+            snapAngle = EditorGUILayout.FloatField(new GUIContent("Snap Angle", "The angle (degrees) increments to snap rotation to"), snapAngle);
+            if(snapAngle < 0.1f) snapAngle = 0.1f; //Minimum snap angle of 0.1 degrees to prevent divide by zero errors
+            GUILayout.BeginHorizontal();
+            if(GUILayout.Button("15°")) snapAngle = 15.0f;
+            if(GUILayout.Button("45°")) snapAngle = 45.0f;
+            if(GUILayout.Button("90°")) snapAngle = 90.0f;
+            if(GUILayout.Button("180°")) snapAngle = 180.0f;
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
+
 
         //Randomisation Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Randomisation Settings", EditorStyles.boldLabel);
+
+        //Mutually exclusive logic for snap rotation and random rotation 
+        bool previousRandomRot = randomRotation;
         randomRotation = EditorGUILayout.Toggle(new GUIContent("Random Rotation", "If enabled, spawned objects will be rotated randomly within the specified range"), randomRotation);
+        if(randomRotation && !previousRandomRot)
+        {
+            snapRotation = false; //Turn off snap rotation if random rotation is enabled
+        }
         if(randomRotation)
         {
             minRotation = EditorGUILayout.Vector3Field(new GUIContent("Min Rotation", "The minimum rotation to apply when randomising"), minRotation);
@@ -94,7 +130,8 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         GUILayout.EndVertical();
     
-        EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n(Ensure objects have colliders to snap to!)", MessageType.Info);
+        EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool", MessageType.Info);
+        EditorGUILayout.EndScrollView();
 
         if(EditorGUI.EndChangeCheck() && isToolActive)
         {
