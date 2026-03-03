@@ -66,14 +66,16 @@ public partial class PrefabPlaceTool : EditorWindow
         //Grid settings only show if the grid is enabled
         if(useGrid)
         {
-            gridSize = EditorGUILayout.Slider(new GUIContent("Grid Size", "The size of the grid to snap to"), gridSize, 0.1f, 10.0f);
-            snapHeight = EditorGUILayout.Toggle(new GUIContent("Snap to Ground Height", "If enabled, objects will be snapped to the height of the grid"), snapHeight);
+            gridSize = EditorGUILayout.Slider(new GUIContent("Grid Size", "The size of the grid to snap to"), gridSize, 0.1f, PrefabPlaceToolSettings.MaxGridSize);
             //Preset buttons
             GUILayout.BeginHorizontal();
-            if(GUILayout.Button("0.5m")) gridSize = 0.5f;
-            if(GUILayout.Button("1.0m")) gridSize = 1.0f;
-            if(GUILayout.Button("2.0m")) gridSize = 2.0f;
+            if(GUILayout.Button(PrefabPlaceToolSettings.GridSizePreset1.ToString()+"m")) gridSize = PrefabPlaceToolSettings.GridSizePreset1;
+            if(GUILayout.Button(PrefabPlaceToolSettings.GridSizePreset2.ToString()+"m")) gridSize = PrefabPlaceToolSettings.GridSizePreset2;
+            if(GUILayout.Button(PrefabPlaceToolSettings.GridSizePreset3.ToString()+"m")) gridSize = PrefabPlaceToolSettings.GridSizePreset3;
             GUILayout.EndHorizontal();
+            snapHeight = EditorGUILayout.Toggle(new GUIContent("Snap to Ground Height", "If enabled, objects will be snapped to the height of the grid"), snapHeight);
+            //Check if grid size is greater than max grid size, if so, set it to max grid size. This prevents errors with the grid drawing function.
+            if(gridSize > PrefabPlaceToolSettings.MaxGridSize) gridSize = PrefabPlaceToolSettings.MaxGridSize;
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
@@ -92,10 +94,10 @@ public partial class PrefabPlaceTool : EditorWindow
             snapAngle = EditorGUILayout.FloatField(new GUIContent("Snap Angle", "The angle (degrees) increments to snap rotation to"), snapAngle);
             if(snapAngle < 0.1f) snapAngle = 0.1f; //Minimum snap angle of 0.1 degrees to prevent divide by zero errors
             GUILayout.BeginHorizontal();
-            if(GUILayout.Button("15°")) snapAngle = 15.0f;
-            if(GUILayout.Button("45°")) snapAngle = 45.0f;
-            if(GUILayout.Button("90°")) snapAngle = 90.0f;
-            if(GUILayout.Button("180°")) snapAngle = 180.0f;
+            if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset1.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset1;
+            if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset2.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset2;
+            if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset3.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset3;
+            if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset4.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset4;
             GUILayout.EndHorizontal();
         }
         GUILayout.EndVertical();
@@ -127,6 +129,8 @@ public partial class PrefabPlaceTool : EditorWindow
             EditorGUILayout.MinMaxSlider(ref minScale, ref maxScale, 0.1f, PrefabPlaceToolSettings.MaxScaleLimit);
             maxScale = EditorGUILayout.FloatField(maxScale, GUILayout.MaxWidth(50));
             GUILayout.EndHorizontal();
+            //Check if maxScale is greater than max scale limit, if so, set it to max scale limit. This prevents errors with the random scale function.
+            if(maxScale > PrefabPlaceToolSettings.MaxScaleLimit) maxScale = PrefabPlaceToolSettings.MaxScaleLimit;
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
