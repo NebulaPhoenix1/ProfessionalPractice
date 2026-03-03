@@ -8,7 +8,10 @@ public partial class PrefabPlaceTool : EditorWindow
     //This is where the ray cast logic happens which tells us where to place objects as well as drawing ghost and grid previews    
     void OnSceneGUI(SceneView sceneView)
     {
-        if(!isToolActive) return;
+        if(!isToolActive)
+        {
+            return;
+        }
 
         Event e = Event.current;
 
@@ -79,13 +82,13 @@ public partial class PrefabPlaceTool : EditorWindow
             }
             else if (e.keyCode == KeyCode.LeftBracket) //Rotate Left
             {
-                float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : 45; // Default to 45 degrees if snapping is off or angle is invalid
+                float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : PrefabPlaceToolSettings.ManualRotationAmount; // Default to 45 degrees if snapping is off or angle is invalid
                 nextRotation *= Quaternion.Euler(0, -rotationAmount, 0);
                 e.Use();
             }
             else if (e.keyCode == KeyCode.RightBracket) //Rotate Right
             {
-                float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : 45; // Default to 45 degrees if snapping is off or angle is invalid
+                float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : PrefabPlaceToolSettings.ManualRotationAmount; // Default to 45 degrees if snapping is off or angle is invalid
                 nextRotation *= Quaternion.Euler(0, rotationAmount, 0);
                 e.Use();
             }
@@ -140,9 +143,12 @@ public partial class PrefabPlaceTool : EditorWindow
                     brushPos = ray.GetPoint(10f); // 10 units in front of the camera
                     brushNormal = -ray.direction; // Face the camera
                 }
-                Handles.color = new Color(1f, 0f, 0f, 0.4f);
+                Color eraseCol = PrefabPlaceToolSettings.ErasePreviewColor;
+                Handles.color = eraseCol;
                 Handles.DrawSolidDisc(brushPos, brushNormal, 0.5f);
-                Handles.color = Color.red;
+                
+                eraseCol.a = 1f; // Make the wireframe fully opaque
+                Handles.color = eraseCol;
                 Handles.DrawWireDisc(brushPos, brushNormal, 0.5f);
             }
             else if(hasHit)
@@ -151,9 +157,10 @@ public partial class PrefabPlaceTool : EditorWindow
                 if (preventOverlap)
                 {
                     Vector3 checkPos = currentPreviewPosition + (hit.normal * overlapRadius);
-                    Handles.color = isBlocked ? new Color(1f, 0f, 0f, 0.5f) : new Color(0f, 1f, 0f, 0.5f);
+                    Color activeColor = isBlocked ? PrefabPlaceToolSettings.InvalidPreviewColor : PrefabPlaceToolSettings.ValidPreviewColor;
+                    Handles.color = activeColor;
                     Handles.DrawSolidDisc(checkPos, Vector3.up, overlapRadius);
-                    Handles.color = isBlocked ? Color.red : Color.green;
+                    Handles.color = activeColor;
                     Handles.DrawWireDisc(checkPos, hit.normal, overlapRadius);
                 }
             }
@@ -163,6 +170,7 @@ public partial class PrefabPlaceTool : EditorWindow
         {
             sceneView.Repaint(); 
         }
+        
     }
     //Function to pick the next prefab to spawn as well as calculating its random rotation and scale based on user settings, then creates the ghost object for previewing
     void PrepareNextSpawn()

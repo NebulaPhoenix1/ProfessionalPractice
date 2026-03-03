@@ -124,7 +124,7 @@ public partial class PrefabPlaceTool : EditorWindow
             GUILayout.BeginHorizontal();
             GUILayout.Label("Scale Range");
             minScale = EditorGUILayout.FloatField(minScale, GUILayout.MaxWidth(50));
-            EditorGUILayout.MinMaxSlider(ref minScale, ref maxScale, 0.1f, 3.0f);
+            EditorGUILayout.MinMaxSlider(ref minScale, ref maxScale, 0.1f, PrefabPlaceToolSettings.MaxScaleLimit);
             maxScale = EditorGUILayout.FloatField(maxScale, GUILayout.MaxWidth(50));
             GUILayout.EndHorizontal();
         }
