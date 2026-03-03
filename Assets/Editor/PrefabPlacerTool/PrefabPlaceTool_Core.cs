@@ -62,6 +62,18 @@ public partial class PrefabPlaceTool : EditorWindow
         GetWindow<PrefabPlaceTool>("Prefab Place Tool");
     }
 
+    [MenuItem("Tools/Toggle Prefab Place Tool %#w")] //Shortcut Ctrl/Cmd + Shift + W
+    public static void ToggleToolWithHotKey()
+    {
+        PrefabPlaceTool window = GetWindow<PrefabPlaceTool>("Prefab Place Tool");
+        window.isToolActive = !window.isToolActive;
+        if (!window.isToolActive)
+        {
+            window.DestroyGhostObject();
+            SceneView.RepaintAll();
+        }
+    }
+
     private void OnEnable()
     {
         //Setup serialized properties for prefab list
