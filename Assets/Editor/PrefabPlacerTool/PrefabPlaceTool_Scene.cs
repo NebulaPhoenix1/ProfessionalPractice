@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 
-
 public partial class PrefabPlaceTool : EditorWindow
 {
     //This is where the ray cast logic happens which tells us where to place objects as well as drawing ghost and grid previews    
@@ -58,7 +57,7 @@ public partial class PrefabPlaceTool : EditorWindow
 
         //Update ghost object preview
         // Now that the raycast is done, we can turn the ghost object back on and move it!
-        if (hasHit && !isBlocked && !isErasing && ghostObject != null && nextPrefabIndex < prefabPallete.Count)
+        if (hasHit && !isBlocked && !isErasing && ghostObject != null && nextPrefabIndex < prefabPallete.Count && !usePaintBrush)
         {
             PalleteEntry currentItem = prefabPallete[nextPrefabIndex];
             ghostObject.SetActive(true); 
@@ -67,12 +66,33 @@ public partial class PrefabPlaceTool : EditorWindow
             ghostObject.transform.rotation = finalRotation;
             ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
         }
+        //Make sure ghost object is hidden if painting
+        else if(ghostObject != null)
+        {
+            ghostObject.SetActive(false);
+        }
+        if(usePaintBrush && !isErasing && !e.alt && e.button == 0)
+        {
+            if(e.type == EventType.MouseDown || e.type == EventType.MouseDrag)
+            {
+                if(hasHit)
+                {
+                    //Check if we click or dragged far enough from the last paint position to spawn more objects
+                    if(Vector3.Distance(currentPreviewPosition, lastPaintPosition) >= brushSpacing || e.type == EventType.MouseDown)
+                    {
+                        PaintPrefabs(currentPreviewPosition);
+                        lastPaintPosition = currentPreviewPosition;
+                    }
+                }
+                e.Use();
+            }
+        }
 
         //Input handling
         if (e.type == EventType.KeyDown)
         {
             //Detecting spacebar for placement 
-            if (e.keyCode == KeyCode.Space)
+            if (e.keyCode == KeyCode.Space && !usePaintBrush) 
             {
                 if (hasHit && !isBlocked && !isErasing)
                 {
@@ -165,7 +185,12 @@ public partial class PrefabPlaceTool : EditorWindow
             else if(hasHit)
             {
                 DrawGridPreview(currentPreviewPosition);
-                if (preventOverlap)
+                if(usePaintBrush)
+                {
+                    Handles.color = PrefabPlaceToolSettings.ValidPreviewColor;
+                    Handles.DrawWireDisc(currentPreviewPosition, hit.normal, brushRadius);
+                }
+                if (preventOverlap && !usePaintBrush)
                 {
                     Vector3 checkPos = currentPreviewPosition + (hit.normal * overlapRadius);
                     Color activeColor = isBlocked ? PrefabPlaceToolSettings.InvalidPreviewColor : PrefabPlaceToolSettings.ValidPreviewColor;
@@ -403,4 +428,78 @@ public partial class PrefabPlaceTool : EditorWindow
             t.gameObject.layer = layer;
         }
     } 
+
+    //Paint brush logic
+    void PaintPrefabs(Vector3 brushCenter)
+    {
+        if(prefabPallete.Count == 0) return;
+
+        //Calculate vaild prefabs
+        List<int> validIndices = new List<int>();
+        if(randomSelection)
+        {
+            for(int i = 0; i < prefabPallete.Count; i++)
+            {
+                if(prefabPallete[i].prefab != null)
+                {
+                    validIndices.Add(i);
+                }
+            }
+            if(validIndices.Count == 0) return;
+        }
+
+        Undo.IncrementCurrentGroup();
+        Undo.SetCurrentGroupName("Paint Prefabs");
+        int undoGroup = Undo.GetCurrentGroup();
+        //Iterate through brush density
+        for(int i = 0; i < brushDensity; i++)
+        {
+            //Pick random 2D position within radius
+            Vector2 randomPos = UnityEngine.Random.insideUnitCircle * brushRadius;
+            //Go high in sky to prepare for raycast downwards
+            Vector3 raycastOrigin = brushCenter + new Vector3(randomPos.x, 200f, randomPos.y);
+            //Raycast downwards to find height of ground at this random point
+            if(Physics.Raycast(raycastOrigin, Vector3.down, out RaycastHit hit, 200f, placementMask, QueryTriggerInteraction.Ignore))
+            {
+                //Check for overlap if enabled
+                if(preventOverlap)
+                {
+                    Vector3 checkPosition = hit.point + (hit.normal * overlapRadius);
+                    if(Physics.CheckSphere(checkPosition, overlapRadius, overlapMask))
+                    {
+                        continue; //Skip this spawn if it is overlapping
+                    }
+                }
+                //Choose which prefab to spawn (manual selection vs random)
+                int indexToSpawn = randomSelection ? validIndices[Random.Range(0, validIndices.Count)] : nextPrefabIndex;
+                PalleteEntry currentItem = prefabPallete[indexToSpawn];
+                if(currentItem.prefab == null) continue;
+                //Calculate random rotation and scale
+                float scale = randomScale ? UnityEngine.Random.Range(minScale, maxScale) : 1.0f;
+                Quaternion rotation = nextRotation;
+                if(randomRotation)
+                {
+                    rotation = Quaternion.Euler(
+                        UnityEngine.Random.Range(minRotation.x, maxRotation.x),
+                        UnityEngine.Random.Range(minRotation.y, maxRotation.y),
+                        UnityEngine.Random.Range(minRotation.z, maxRotation.z)
+                    );
+                }
+                //Match surface normal if enabled
+                Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * rotation : rotation;
+                Vector3 finalPosition = hit.point + (finalRotation * currentItem.offset);
+                //Spawn the prefab
+                GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(currentItem.prefab);
+                newObj.transform.position = finalPosition;
+                newObj.transform.localScale = Vector3.one * scale;
+                newObj.transform.rotation = finalRotation;
+                if(parentContainer != null) newObj.transform.parent = parentContainer;
+                if(overridePrefabLayer) SetLayerRecursively(newObj, spawnLayer);
+                Undo.RegisterCreatedObjectUndo(newObj, "Painted Prefab");
+                if(preventOverlap) Physics.SyncTransforms(); //Ensure physics engine is up to date before next overlap check
+            }
+            Undo.CollapseUndoOperations(undoGroup);
+            PrepareNextSpawn(); //Prepare next spawn to update ghost object and prefab selection
+        }
+    }
 }

@@ -39,6 +39,20 @@ public partial class PrefabPlaceTool : EditorWindow
         matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
         EditorGUILayout.Space();
 
+        //Paint Brush Settings
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Paint Brush Settings", EditorStyles.boldLabel);
+        usePaintBrush = EditorGUILayout.Toggle(new GUIContent("Use Paint Brush", "If enabled, the tool will spawn multiple prefabs in a brush pattern while the mouse button is held down"), usePaintBrush);
+        if(usePaintBrush)
+        {
+            brushRadius = EditorGUILayout.Slider(new GUIContent("Brush Radius", "The radius of the paint brush"), brushRadius, 0.1f, 50f);
+            brushDensity = EditorGUILayout.IntSlider(new GUIContent("Brush Density", "How many prefabs to spawn per brush stroke"), brushDensity, 1, 20);
+            brushSpacing = EditorGUILayout.Slider(new GUIContent("Brush Spacing", "Minimum distance between spawned prefabs when using the paint brush"), brushSpacing, 0.1f, 10f);
+            EditorGUILayout.HelpBox("Hold Left Click and Drag in the Scene View to paint prefabs. The brush will spawn prefabs in a radius around the mouse cursor, the density and spacing of the prefabs can be adjusted with the settings above.", MessageType.Info);
+        }
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
+
         //Override prefab layer 
         overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
         if(overridePrefabLayer)

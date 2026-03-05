@@ -51,6 +51,13 @@ public partial class PrefabPlaceTool : EditorWindow
     float minScale = 0.8f;
     float maxScale = 1.2f;
 
+    //Paint brush settings
+    bool usePaintBrush = false;
+    float brushRadius = 5.0f;
+    int brushDensity = 5; //How many prefabs to spawn per brush stroke
+    float brushSpacing = 2.0f; //Minimum distance between spawned prefabs when using the paint brush
+    UnityEngine.Vector3 lastPaintPosition = Vector3.positiveInfinity; 
+
     //Preview settings
     UnityEngine.Vector3 currentPreviewPosition; //Where ghost object is currently previewed
     bool hasHit = false; //Whether the raycast has hit a valid surface
