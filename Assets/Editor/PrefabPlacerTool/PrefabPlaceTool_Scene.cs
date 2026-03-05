@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using Unity.VisualScripting.YamlDotNet.Core.Tokens;
+
 
 public partial class PrefabPlaceTool : EditorWindow
 {
@@ -90,6 +90,17 @@ public partial class PrefabPlaceTool : EditorWindow
             {
                 float rotationAmount = (snapRotation && snapAngle > 0) ? snapAngle : PrefabPlaceToolSettings.ManualRotationAmount; // Default to 45 degrees if snapping is off or angle is invalid
                 nextRotation *= Quaternion.Euler(0, rotationAmount, 0);
+                e.Use();
+            }
+            //Cycling prefabs with arrow keys (up and down)
+            else if(e.keyCode == KeyCode.UpArrow)
+            {
+                CyclePrefab(1); //Go to next 
+                e.Use();
+            }
+            else if(e.keyCode == KeyCode.DownArrow)
+            {
+                CyclePrefab(-1); //Go to previous
                 e.Use();
             }
             //Detecting shift + backspace for erasing
@@ -186,8 +197,17 @@ public partial class PrefabPlaceTool : EditorWindow
             }
         }
         if(validIndices.Count == 0) return;
-        //Pick random valid index
-        nextPrefabIndex = validIndices[Random.Range(0, validIndices.Count)];
+        if(randomSelection)
+        {
+            nextPrefabIndex = validIndices[Random.Range(0, validIndices.Count)];
+        }
+        else
+        {
+            if(!validIndices.Contains(nextPrefabIndex))
+            {
+                nextPrefabIndex = validIndices[0]; //Reset to first valid index if the current one is invalid
+            }
+        }
         nextScale = randomScale ? Random.Range(minScale, maxScale) : 1.0f;
         if(randomRotation)
         {
@@ -206,6 +226,45 @@ public partial class PrefabPlaceTool : EditorWindow
             nextRotation = Quaternion.Euler(euler);
         }
         CreateGhostObject();
+    }
+
+    void CyclePrefab(int direction)
+    {
+        if(prefabPallete.Count == 0) return;
+        if(randomSelection)
+        {
+            randomSelection = false; //Turn off random selection if user starts manually cycling
+            Repaint();
+        }
+        //Make a list of all valid prefab indices
+        List<int> validIndices = new List<int>();
+        for(int i = 0; i < prefabPallete.Count; i++)
+        {
+            if(prefabPallete[i].prefab != null)
+            {
+                validIndices.Add(i);
+            }
+        }
+        if(validIndices.Count == 0) return;
+        //Find where we are in the valid list
+        int currentIndexInValid = validIndices.IndexOf(nextPrefabIndex);
+        if(currentIndexInValid == -1) currentIndexInValid = 0; //If current index is invalid for some reason, reset to first valid index
+        currentIndexInValid += direction;
+        //Wrap around
+        if(currentIndexInValid >= validIndices.Count) currentIndexInValid = 0;
+        if(currentIndexInValid < 0) currentIndexInValid = validIndices.Count - 1;
+        nextPrefabIndex = validIndices[currentIndexInValid];
+        //Keep rotation and scale consistent when cycling
+        if(randomRotation)
+        {
+            nextRotation = Quaternion.Euler(
+                UnityEngine.Random.Range(minRotation.x, maxRotation.x),
+                UnityEngine.Random.Range(minRotation.y, maxRotation.y),
+                UnityEngine.Random.Range(minRotation.z, maxRotation.z)
+            );
+        }
+        CreateGhostObject();
+       
     }
 
     void CreateGhostObject()

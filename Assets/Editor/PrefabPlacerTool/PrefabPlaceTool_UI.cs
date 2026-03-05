@@ -107,6 +107,9 @@ public partial class PrefabPlaceTool : EditorWindow
         //Randomisation Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Randomisation Settings", EditorStyles.boldLabel);
+        //Toggle for random selectio of prefabs
+        randomSelection = EditorGUILayout.Toggle(new GUIContent("Random Prefab Selection", "If enabled, a random prefab from the pallete will be selected each time you spawn an object. If disabled, you can cycle through prefabs with the up arrow and down arrow keys"), randomSelection);
+
 
         //Mutually exclusive logic for snap rotation and random rotation 
         bool previousRandomRot = randomRotation;
@@ -144,7 +147,7 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         GUILayout.EndVertical();
     
-        EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool", MessageType.Info);
+        EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool \nUp and Down Arrows = Cycle Prefabs Manually", MessageType.Info);
         EditorGUILayout.EndScrollView();
 
         if(EditorGUI.EndChangeCheck() && isToolActive)

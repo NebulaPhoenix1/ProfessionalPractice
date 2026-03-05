@@ -43,6 +43,7 @@ public partial class PrefabPlaceTool : EditorWindow
     float snapAngle = 90.0f;
 
     //Randomisation Settings
+    bool randomSelection = true; //Whether to randomly select a prefab or if the user can select one with arrow keys
     bool randomRotation = false;
     UnityEngine.Vector3 minRotation = UnityEngine.Vector3.zero;
     UnityEngine.Vector3 maxRotation = new UnityEngine.Vector3(0, 360, 0);
