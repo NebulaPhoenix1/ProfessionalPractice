@@ -139,7 +139,7 @@ public class PrefabPlaceToolSettings : EditorWindow
     }
 
     //Settings UI
-    [MenuItem("Tools/Prefab Place Tool Settings")]
+    [MenuItem("Tools/Prefab Place Tool Settings #%M")] //Shortcut Ctrl/Cmd + Shift + C
     public static void ShowSettings()
     {
         GetWindow<PrefabPlaceToolSettings>("Prefab Place Tool Settings");

@@ -50,9 +50,12 @@ public partial class PrefabPlaceTool : EditorWindow
             }
             //Draw Properties
             GUILayout.BeginVertical();
-            prefabPallete[i].prefab = (GameObject)EditorGUILayout.ObjectField("Prefab Object", prefabPallete[i].prefab, typeof(GameObject), false);
-            prefabPallete[i].offset = EditorGUILayout.Vector3Field("Placement Offset", prefabPallete[i].offset);
             float originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 85; //Set label width for object field to prevent it from taking up too much space
+            prefabPallete[i].prefab = (GameObject)EditorGUILayout.ObjectField("Prefab Object", prefabPallete[i].prefab, typeof(GameObject), false);
+            EditorGUIUtility.labelWidth = originalLabelWidth; //Reset label width
+
+            prefabPallete[i].offset = EditorGUILayout.Vector3Field("Placement Offset", prefabPallete[i].offset);
             EditorGUIUtility.labelWidth = 100; //Set label width for weight slider to prevent it from taking up too much space
             prefabPallete[i].weight = EditorGUILayout.Slider(new GUIContent("Spawn Weight", "Chance of the prefab to spawn"), prefabPallete[i].weight, 0f, 100f);
             EditorGUIUtility.labelWidth = originalLabelWidth; //Reset label width
@@ -219,7 +222,9 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         GUILayout.EndVertical();
     
-        EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool \nUp and Down Arrows = Cycle Prefabs Manually", MessageType.Info);
+        EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool \nUp and Down Arrows = Cycle Prefabs Manually ", MessageType.Info);
+        EditorGUILayout.Space();
+        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection", MessageType.Info);
         EditorGUILayout.EndScrollView();
 
         if(EditorGUI.EndChangeCheck() && isToolActive)

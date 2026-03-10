@@ -131,6 +131,69 @@ public partial class PrefabPlaceTool : EditorWindow
                 EraseObjectsInRadius(ray);
                 e.Use();
             }
+            //Settings toggle hot keys go here
+            //Toggle Grid (G)
+            else if (e.keyCode == KeyCode.G && !e.shift)
+            {
+                useGrid = !useGrid;
+                Repaint();
+                e.Use();
+            }
+            //Toggle Match Normal (N)
+            else if(e.keyCode == KeyCode.N && !e.shift)
+            {
+                matchSurfaceNormal = !matchSurfaceNormal;
+                PrepareNextSpawn(); //Update ghost object rotation immediately to reflect the change
+                Repaint();
+                e.Use();
+            }
+            //Toggle Prevent Overlap (O)
+            else if(e.keyCode == KeyCode.O && !e.shift)
+            {
+                preventOverlap = !preventOverlap;
+                Repaint();
+                e.Use();
+            }
+            //Toggle Paint Brush (P)
+            else if(e.keyCode == KeyCode.P && !e.shift)
+            {
+                usePaintBrush = !usePaintBrush;
+                PrepareNextSpawn(); //Update ghost object immediately to reflect the change
+                Repaint();
+                e.Use();
+            }
+            //Toggle Random Scale (L)
+            else if(e.keyCode == KeyCode.L && !e.shift)
+            {
+                randomScale = !randomScale;
+                PrepareNextSpawn(); //Update ghost object immediately to reflect the change
+                Repaint();
+                e.Use();
+            }
+            //Toggle Random Rotation (R)
+            else if(e.keyCode == KeyCode.R && !e.shift)
+            {
+                randomRotation = !randomRotation;
+                PrepareNextSpawn(); //Update ghost object immediately to reflect the change
+                Repaint();
+                e.Use();
+            }
+            //Toggle Rotation Snapping (J)
+            else if(e.keyCode == KeyCode.J && !e.shift)
+            {
+                snapRotation = !snapRotation;
+                Repaint();
+                e.Use();
+            }
+            //Toggle Random Prefab Selection (Y)
+            else if(e.keyCode == KeyCode.Y && !e.shift)
+            {
+                randomSelection = !randomSelection;
+                PrepareNextSpawn(); //Update ghost object immediately to reflect the change
+                Repaint();
+                e.Use();
+            }
+
         }
         else if (e.type == EventType.KeyUp && e.keyCode == KeyCode.Backspace)
         {
@@ -242,7 +305,7 @@ public partial class PrefabPlaceTool : EditorWindow
         //Draw Hotkey box if enabled
         if(PrefabPlaceToolSettings.ShowHotKeysInScene)
         {
-            GUILayout.BeginArea(new Rect(10, 50, 250, 80), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(10, 50, 250, 250), GUI.skin.box);
             GUIStyle hotKeyText = new GUIStyle(GUI.skin.label);
             hotKeyText.fontSize = 12;
             hotKeyText.normal.textColor = new Color(0.8f,0.8f,0.8f);
@@ -250,6 +313,15 @@ public partial class PrefabPlaceTool : EditorWindow
             GUILayout.Label("SHIFT + BACKSPACE: Erase Object", hotKeyText);
             GUILayout.Label("UP/DOWN ARROWS: Cycle Prefabs", hotKeyText);
             GUILayout.Label("LEFT/RIGHT BRACKETS: Rotate Object", hotKeyText);
+            GUILayout.Space(5);
+            GUILayout.Label("G: Toggle Grid", hotKeyText);
+            GUILayout.Label("N: Toggle Match Normal", hotKeyText);
+            GUILayout.Label("O: Toggle Prevent Overlap", hotKeyText);
+            GUILayout.Label("P: Toggle Paint Brush", hotKeyText);
+            GUILayout.Label("L: Toggle Random Scale", hotKeyText);
+            GUILayout.Label("R: Toggle Random Rotation", hotKeyText);
+            GUILayout.Label("J: Toggle Rotation Snapping", hotKeyText);
+            GUILayout.Label("Y: Toggle Random Prefab Selection", hotKeyText);
             GUILayout.EndArea();
         }
         Handles.EndGUI();
