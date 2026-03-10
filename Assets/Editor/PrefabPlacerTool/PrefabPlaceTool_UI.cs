@@ -35,7 +35,6 @@ public partial class PrefabPlaceTool : EditorWindow
         GUILayout.Label("Placement Settings", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
         EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers", "The tool will only place objects on colliders on these layers."));
-        EditorGUILayout.PropertyField(propEraseMask, new GUIContent("Eraseable Layers", "The tool will only erase objects on colliders on these layers."));
         matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
         EditorGUILayout.Space();
 
@@ -100,6 +99,14 @@ public partial class PrefabPlaceTool : EditorWindow
             overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
             EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
         }
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
+
+        //Erase Settings
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Erase Settings", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(propEraseMask, new GUIContent("Eraseable Layers", "The tool will only erase objects on colliders on these layers."));
+        eraseRadius = EditorGUILayout.Slider(new GUIContent("Erase Radius", "The radius of the area eraser"), eraseRadius, 0.1f, 50f);
         GUILayout.EndVertical();
         EditorGUILayout.Space();
         

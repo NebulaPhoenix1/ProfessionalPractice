@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 
+
 public partial class PrefabPlaceTool : EditorWindow
 {
     //This is where the ray cast logic happens which tells us where to place objects as well as drawing ghost and grid previews    
@@ -127,7 +128,7 @@ public partial class PrefabPlaceTool : EditorWindow
             else if (e.keyCode == KeyCode.Backspace && e.shift)
             {
                 isErasing = true;
-                DeleteObjectUnderCursor(ray);
+                EraseObjectsInRadius(ray);
                 e.Use();
             }
         }
@@ -139,7 +140,7 @@ public partial class PrefabPlaceTool : EditorWindow
         {
             if (e.shift)
             {
-                DeleteObjectUnderCursor(ray);
+                EraseObjectsInRadius(ray);
                 e.Use();
             }
             else
@@ -176,11 +177,11 @@ public partial class PrefabPlaceTool : EditorWindow
                 }
                 Color eraseCol = PrefabPlaceToolSettings.ErasePreviewColor;
                 Handles.color = eraseCol;
-                Handles.DrawSolidDisc(brushPos, brushNormal, 0.5f);
+                Handles.DrawSolidDisc(brushPos, brushNormal, eraseRadius);
                 
                 eraseCol.a = 1f; // Make the wireframe fully opaque
                 Handles.color = eraseCol;
-                Handles.DrawWireDisc(brushPos, brushNormal, 0.5f);
+                Handles.DrawWireDisc(brushPos, brushNormal, eraseRadius);
             }
             else if(hasHit)
             {
@@ -483,21 +484,37 @@ public partial class PrefabPlaceTool : EditorWindow
     }
     
 
-    void DeleteObjectUnderCursor(Ray ray)
+    void EraseObjectsInRadius(Ray ray)
     {
-       if(Physics.Raycast(ray, out RaycastHit eraseHit, Mathf.Infinity, eraseMask, QueryTriggerInteraction.Ignore))
-       {
-           GameObject objToDelete = eraseHit.collider.gameObject;
-           GameObject rootToDelete = PrefabUtility.GetOutermostPrefabInstanceRoot(objToDelete);
-           if(rootToDelete != null)
-           {
-               Undo.DestroyObjectImmediate(rootToDelete);
-           }
-           else
-           {
-               Undo.DestroyObjectImmediate(objToDelete);
-           }
-       }
+        Vector3 eraseCenter;
+        if(Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, eraseMask | placementMask, QueryTriggerInteraction.Ignore))
+        {
+            eraseCenter = hit.point;
+        }
+        else
+        {
+            eraseCenter = ray.GetPoint(10f); // 10 units in front of the camera, fallback if aiming at nothing
+        }
+        Collider[] collidersToErase = Physics.OverlapSphere(eraseCenter, eraseRadius, eraseMask, QueryTriggerInteraction.Ignore);
+        if(collidersToErase.Length > 0)
+        {
+            Undo.IncrementCurrentGroup();
+            Undo.SetCurrentGroupName("Erase Multiple Objects");
+            int undoGroup = Undo.GetCurrentGroup();
+            HashSet<GameObject> erasedObjects = new HashSet<GameObject>(); //Use a hash set to avoid duplicates
+            foreach(Collider col in collidersToErase)
+            {
+                GameObject objToDelete = col.gameObject;
+                GameObject rootToDelete = objToDelete.transform.root.gameObject; //Get the root object to delete the entire prefab instance
+                GameObject finalTarget = rootToDelete != null ? rootToDelete : objToDelete; //Fallback to the collider's own object if something goes wrong with getting the root
+                if(!erasedObjects.Contains(finalTarget))
+                {
+                    Undo.DestroyObjectImmediate(finalTarget);
+                    erasedObjects.Add(finalTarget);
+                }
+            }
+            Undo.CollapseUndoOperations(undoGroup);
+        }
     }
 
     //Sets the layer of the object and all its children recursively, used for the layer override feature

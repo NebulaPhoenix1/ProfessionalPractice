@@ -31,7 +31,10 @@ public partial class PrefabPlaceTool : EditorWindow
     bool preventOverlap = false;
     float overlapRadius = 0.5f;
     [SerializeField] LayerMask overlapMask = ~0; //Default to everything; layers to check for collisions with.
+
+    //Erase mode settings
     [SerializeField] LayerMask eraseMask = ~0; //Default to everything; layers that can be erased when in erase mode
+    float eraseRadius = 2.0f;
 
     //Grid Settings
     bool useGrid = false;
