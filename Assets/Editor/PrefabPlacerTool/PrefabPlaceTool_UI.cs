@@ -27,8 +27,59 @@ public partial class PrefabPlaceTool : EditorWindow
 
         //Prefab Pallete 
         serializedObject.Update();
-        EditorGUILayout.PropertyField(propPallete, new GUIContent("Prefab Pallete", "List of random prefabs to spawn, a custom offset can be set for each."), true);
+        //Custom inspector for prefab pallete list
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Prefab Pallete", EditorStyles.boldLabel);
+        Undo.RecordObject(this, "Modify Prefab Pallete"); //Allows undo/redo for changes to the prefab pallete
+        for (int i = 0; i < prefabPallete.Count; i++)
+        {
+            GUILayout.BeginHorizontal();
+            Texture2D preview = null;
+            if(prefabPallete[i].prefab != null)
+            {
+                preview = AssetPreview.GetAssetPreview(prefabPallete[i].prefab);
+            }
+            //Draw the icon preview of the prefab if it exists, otherwise draw a box with text saying no preview available
+            if(preview != null)
+            {
+                GUILayout.Label(preview, GUILayout.Width(64), GUILayout.Height(64));
+            }
+            else
+            {
+                GUILayout.Box("No Preview Available", GUILayout.Width(64), GUILayout.Height(64));
+            }
+            //Draw Properties
+            GUILayout.BeginVertical();
+            prefabPallete[i].prefab = (GameObject)EditorGUILayout.ObjectField("Prefab Object", prefabPallete[i].prefab, typeof(GameObject), false);
+            prefabPallete[i].offset = EditorGUILayout.Vector3Field("Placement Offset", prefabPallete[i].offset);
+            float originalLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 100; //Set label width for weight slider to prevent it from taking up too much space
+            prefabPallete[i].weight = EditorGUILayout.Slider(new GUIContent("Spawn Weight", "Chance of the prefab to spawn"), prefabPallete[i].weight, 0f, 100f);
+            EditorGUIUtility.labelWidth = originalLabelWidth; //Reset label width
+            EditorGUILayout.Space();
+            GUILayout.EndVertical();
+            
+            //Remove button
+            GUI.backgroundColor = new Color(1f, 0.4f, 0.4f); //Light red color for remove button
+            if(GUILayout.Button("X", GUILayout.Width(25), GUILayout.ExpandHeight(true)))
+            {
+                prefabPallete.RemoveAt(i);
+                i--;
+            }
+            GUI.backgroundColor = Color.white;
+            EditorGUILayout.Space();
+            GUILayout.EndHorizontal();
+        }
+        //Add new prefab button
+        GUI.backgroundColor = new Color(0.4f, 1f, 0.4f); //Light green color for add button
+        if(GUILayout.Button("Add New Prefab", GUILayout.Height(25)))
+        {
+            prefabPallete.Add(new PalleteEntry());
+        }
+        GUI.backgroundColor = Color.white;
+        GUILayout.EndVertical();
         EditorGUILayout.Space();
+
 
         //Placement Settings
         GUILayout.BeginVertical("box");
@@ -36,6 +87,25 @@ public partial class PrefabPlaceTool : EditorWindow
         EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
         EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers", "The tool will only place objects on colliders on these layers."));
         matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
+        //Override prefab layer 
+        overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
+        if(overridePrefabLayer)
+        {
+            spawnLayer = EditorGUILayout.LayerField(new GUIContent("Spawn Layer", "The layer to set spawned objects to"), spawnLayer);
+            EditorGUILayout.Space();
+        }
+        //Overlap prevention settings
+        preventOverlap = EditorGUILayout.Toggle(new GUIContent("Prevent Overlap", "Stops spawning if there are existing colliders within the overlap radius"), preventOverlap);
+        if(preventOverlap)
+        {
+            overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
+            EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
+        }
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
+        
+        
+        
         EditorGUILayout.Space();
 
         //Paint Brush Settings
@@ -84,23 +154,7 @@ public partial class PrefabPlaceTool : EditorWindow
         GUILayout.EndVertical();
         EditorGUILayout.Space();
 
-        //Override prefab layer 
-        overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
-        if(overridePrefabLayer)
-        {
-            spawnLayer = EditorGUILayout.LayerField(new GUIContent("Spawn Layer", "The layer to set spawned objects to"), spawnLayer);
-            EditorGUILayout.Space();
-        }
-
-        //Overlap prevention settings
-        preventOverlap = EditorGUILayout.Toggle(new GUIContent("Prevent Overlap", "Stops spawning if there are existing colliders within the overlap radius"), preventOverlap);
-        if(preventOverlap)
-        {
-            overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
-            EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
-        }
-        GUILayout.EndVertical();
-        EditorGUILayout.Space();
+        
 
         //Erase Settings
         GUILayout.BeginVertical("box");
