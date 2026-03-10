@@ -53,6 +53,38 @@ public partial class PrefabPlaceTool : EditorWindow
         GUILayout.EndVertical();
         EditorGUILayout.Space();
 
+        //Randomisation Settings
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Randomisation Settings", EditorStyles.boldLabel);
+        //Toggle for random selectio of prefabs
+        randomSelection = EditorGUILayout.Toggle(new GUIContent("Random Prefab Selection", "If enabled, a random prefab from the pallete will be selected each time you spawn an object. If disabled, you can cycle through prefabs with the up arrow and down arrow keys"), randomSelection);
+        //Mutually exclusive logic for snap rotation and random rotation 
+        bool previousRandomRot = randomRotation;
+        randomRotation = EditorGUILayout.Toggle(new GUIContent("Random Rotation", "If enabled, spawned objects will be rotated randomly within the specified range"), randomRotation);
+        if(randomRotation && !previousRandomRot)
+        {
+            snapRotation = false; //Turn off snap rotation if random rotation is enabled
+        }
+        if(randomRotation)
+        {
+            minRotation = EditorGUILayout.Vector3Field(new GUIContent("Min Rotation", "The minimum rotation to apply when randomising"), minRotation);
+            maxRotation = EditorGUILayout.Vector3Field(new GUIContent("Max Rotation", "The maximum rotation to apply when randomising"), maxRotation);
+        }
+        randomScale = EditorGUILayout.Toggle(new GUIContent("Random Scale", "If enabled, spawned objects will be scaled randomly within the specified range"), randomScale);
+        if(randomScale)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Scale Range");
+            minScale = EditorGUILayout.FloatField(minScale, GUILayout.MaxWidth(50));
+            EditorGUILayout.MinMaxSlider(ref minScale, ref maxScale, 0.1f, PrefabPlaceToolSettings.MaxScaleLimit);
+            maxScale = EditorGUILayout.FloatField(maxScale, GUILayout.MaxWidth(50));
+            GUILayout.EndHorizontal();
+            //Check if maxScale is greater than max scale limit, if so, set it to max scale limit. This prevents errors with the random scale function.
+            if(maxScale > PrefabPlaceToolSettings.MaxScaleLimit) maxScale = PrefabPlaceToolSettings.MaxScaleLimit;
+        }
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
+
         //Override prefab layer 
         overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
         if(overridePrefabLayer)
@@ -113,41 +145,6 @@ public partial class PrefabPlaceTool : EditorWindow
             if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset3.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset3;
             if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset4.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset4;
             GUILayout.EndHorizontal();
-        }
-        GUILayout.EndVertical();
-        EditorGUILayout.Space();
-
-
-        //Randomisation Settings
-        GUILayout.BeginVertical("box");
-        GUILayout.Label("Randomisation Settings", EditorStyles.boldLabel);
-        //Toggle for random selectio of prefabs
-        randomSelection = EditorGUILayout.Toggle(new GUIContent("Random Prefab Selection", "If enabled, a random prefab from the pallete will be selected each time you spawn an object. If disabled, you can cycle through prefabs with the up arrow and down arrow keys"), randomSelection);
-
-
-        //Mutually exclusive logic for snap rotation and random rotation 
-        bool previousRandomRot = randomRotation;
-        randomRotation = EditorGUILayout.Toggle(new GUIContent("Random Rotation", "If enabled, spawned objects will be rotated randomly within the specified range"), randomRotation);
-        if(randomRotation && !previousRandomRot)
-        {
-            snapRotation = false; //Turn off snap rotation if random rotation is enabled
-        }
-        if(randomRotation)
-        {
-            minRotation = EditorGUILayout.Vector3Field(new GUIContent("Min Rotation", "The minimum rotation to apply when randomising"), minRotation);
-            maxRotation = EditorGUILayout.Vector3Field(new GUIContent("Max Rotation", "The maximum rotation to apply when randomising"), maxRotation);
-        }
-        randomScale = EditorGUILayout.Toggle(new GUIContent("Random Scale", "If enabled, spawned objects will be scaled randomly within the specified range"), randomScale);
-        if(randomScale)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Scale Range");
-            minScale = EditorGUILayout.FloatField(minScale, GUILayout.MaxWidth(50));
-            EditorGUILayout.MinMaxSlider(ref minScale, ref maxScale, 0.1f, PrefabPlaceToolSettings.MaxScaleLimit);
-            maxScale = EditorGUILayout.FloatField(maxScale, GUILayout.MaxWidth(50));
-            GUILayout.EndHorizontal();
-            //Check if maxScale is greater than max scale limit, if so, set it to max scale limit. This prevents errors with the random scale function.
-            if(maxScale > PrefabPlaceToolSettings.MaxScaleLimit) maxScale = PrefabPlaceToolSettings.MaxScaleLimit;
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();

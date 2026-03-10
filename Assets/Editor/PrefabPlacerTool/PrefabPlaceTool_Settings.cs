@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using System.Data.Common;
 
 public class PrefabPlaceToolSettings : EditorWindow
 {
@@ -125,6 +126,18 @@ public class PrefabPlaceToolSettings : EditorWindow
         }
     }
 
+    public static bool ShowSceneUI
+    {
+        get => EditorPrefs.GetBool("PrefabPlaceTool_ShowSceneUI", true); //Default to true
+        set => EditorPrefs.SetBool("PrefabPlaceTool_ShowSceneUI", value);
+    }
+
+    public static bool ShowHotKeysInScene
+    {
+        get => EditorPrefs.GetBool("PrefabPlaceTool_ShowHotKeysInScene", true); //Default to true
+        set => EditorPrefs.SetBool("PrefabPlaceTool_ShowHotKeysInScene", value);
+    }
+
     //Settings UI
     [MenuItem("Tools/Prefab Place Tool Settings")]
     public static void ShowSettings()
@@ -138,6 +151,16 @@ public class PrefabPlaceToolSettings : EditorWindow
         EditorGUILayout.Space();
 
         EditorGUI.BeginChangeCheck(); //If a change happens, tells ghost object to instantly update
+
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Scene View UI Settings", EditorStyles.boldLabel);
+        ShowSceneUI = EditorGUILayout.Toggle(new GUIContent("Show Scene UI", "Toggles heads up display in scene view"), ShowSceneUI);
+        if(ShowSceneUI)
+        {
+            ShowHotKeysInScene = EditorGUILayout.Toggle(new GUIContent("Show Hotkeys in Scene", "Toggles whether to show the hotkeys for each action in the scene view UI"), ShowHotKeysInScene);
+        }
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
 
         GUILayout.BeginVertical("box");
         GUILayout.Label("Grid Value Settings", EditorStyles.boldLabel);
@@ -214,6 +237,8 @@ public class PrefabPlaceToolSettings : EditorWindow
             EditorPrefs.DeleteKey("PrefabPlaceTool_RotationSnappingPreset2");
             EditorPrefs.DeleteKey("PrefabPlaceTool_RotationSnappingPreset3");
             EditorPrefs.DeleteKey("PrefabPlaceTool_RotationSnappingPreset4");
+            EditorPrefs.DeleteKey("PrefabPlaceTool_ShowSceneUI");
+            EditorPrefs.DeleteKey("PrefabPlaceTool_ShowHotKeysInScene");
             SceneView.RepaintAll();
         }
     }

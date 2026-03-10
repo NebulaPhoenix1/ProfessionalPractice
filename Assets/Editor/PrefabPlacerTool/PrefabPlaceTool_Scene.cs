@@ -206,8 +206,54 @@ public partial class PrefabPlaceTool : EditorWindow
         {
             sceneView.Repaint(); 
         }
-        
+
+        if(PrefabPlaceToolSettings.ShowSceneUI) DrawHandles(); 
     }
+
+    void DrawHandles()
+    {
+        Handles.BeginGUI();
+        string toolMode;
+        Color modeColor;
+        //Figure out which tool is currently active for display 
+        if(isErasing)
+        {
+            toolMode = "Erase Mode";
+            modeColor = PrefabPlaceToolSettings.ErasePreviewColor;
+        }
+        else if(usePaintBrush)
+        {
+            toolMode = "Paint Brush Mode";
+            modeColor = PrefabPlaceToolSettings.ValidPreviewColor;
+        }
+        else
+        {
+            toolMode = "Placement Mode";
+            modeColor = PrefabPlaceToolSettings.ValidPreviewColor;
+        }
+        GUIStyle titleStyle = new GUIStyle(GUI.skin.box);
+        titleStyle.fontSize = 14;
+        titleStyle.fontStyle = FontStyle.Bold;
+        titleStyle.normal.textColor = modeColor;
+        titleStyle.alignment = TextAnchor.MiddleCenter;
+        //Draw the title box
+        GUI.Box(new Rect(10, 10, 200, 30), toolMode, titleStyle);
+        //Draw Hotkey box if enabled
+        if(PrefabPlaceToolSettings.ShowHotKeysInScene)
+        {
+            GUILayout.BeginArea(new Rect(10, 50, 250, 80), GUI.skin.box);
+            GUIStyle hotKeyText = new GUIStyle(GUI.skin.label);
+            hotKeyText.fontSize = 12;
+            hotKeyText.normal.textColor = new Color(0.8f,0.8f,0.8f);
+            GUILayout.Label("SPACE: Place Object", hotKeyText);
+            GUILayout.Label("SHIFT + BACKSPACE: Erase Object", hotKeyText);
+            GUILayout.Label("UP/DOWN ARROWS: Cycle Prefabs", hotKeyText);
+            GUILayout.Label("LEFT/RIGHT BRACKETS: Rotate Object", hotKeyText);
+            GUILayout.EndArea();
+        }
+        Handles.EndGUI();
+    }
+
     //Function to pick the next prefab to spawn as well as calculating its random rotation and scale based on user settings, then creates the ghost object for previewing
     void PrepareNextSpawn()
     {
