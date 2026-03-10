@@ -224,7 +224,7 @@ public partial class PrefabPlaceTool : EditorWindow
         if(validIndices.Count == 0) return;
         if(randomSelection)
         {
-            nextPrefabIndex = validIndices[Random.Range(0, validIndices.Count)];
+            nextPrefabIndex = GetRandomWeightedPrefabIndex(validIndices);
         }
         else
         {
@@ -252,6 +252,32 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         CreateGhostObject();
     }
+
+    //Function to pick a prefab based on it's weight
+    int GetRandomWeightedPrefabIndex(List<int> validIndices)
+    {
+        float totalWeight = 0f;
+        //Calculate total weight
+        foreach(int index in validIndices)
+        {
+            totalWeight += prefabPallete[index].weight;
+        }
+        //Check if total weight is set to 0, if so return first valid prefab
+        if(totalWeight <= 0f) return validIndices[0];
+        //Pick a random value between 0 and total weight
+        float randomValue = Random.Range(0f, totalWeight);
+        //Iterate through and subtract weights until we hit 0 or less
+        foreach(int index in validIndices)
+        {
+            randomValue -= prefabPallete[index].weight;
+            if(randomValue <= 0f)
+            {
+                return index;
+            }
+        }
+        return validIndices[validIndices.Count - 1]; //Fallback, should never happen if weights are set up correctly
+    }
+
 
     void CyclePrefab(int direction)
     {
@@ -377,11 +403,22 @@ public partial class PrefabPlaceTool : EditorWindow
     {
         GameObject[] selectedObjects = Selection.gameObjects;
         if(selectedObjects.Length == 0 || prefabPallete.Count == 0) return;
-        
+        //Get valid indices
+        List<int> validIndices = new List<int>();
+        for(int i = 0; i < prefabPallete.Count; i++)
+        {
+            if(prefabPallete[i].prefab != null)
+            {
+                validIndices.Add(i);
+            }
+        }
+        if(validIndices.Count == 0) return;
+
         foreach(GameObject obj in selectedObjects)
         {
-            // Just picking a basic random one here for replacement
-            PalleteEntry currentItem = prefabPallete[Random.Range(0, prefabPallete.Count)];
+            //Pick random item from pallete based on weight if set
+            int randomIndex = GetRandomWeightedPrefabIndex(validIndices);
+            PalleteEntry currentItem = prefabPallete[randomIndex];
             if (currentItem.prefab == null) continue;
 
             GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(currentItem.prefab);
@@ -471,7 +508,7 @@ public partial class PrefabPlaceTool : EditorWindow
                     }
                 }
                 //Choose which prefab to spawn (manual selection vs random)
-                int indexToSpawn = randomSelection ? validIndices[Random.Range(0, validIndices.Count)] : nextPrefabIndex;
+                int indexToSpawn = randomSelection ? GetRandomWeightedPrefabIndex(validIndices) : nextPrefabIndex;
                 PalleteEntry currentItem = prefabPallete[indexToSpawn];
                 if(currentItem.prefab == null) continue;
                 //Calculate random rotation and scale
