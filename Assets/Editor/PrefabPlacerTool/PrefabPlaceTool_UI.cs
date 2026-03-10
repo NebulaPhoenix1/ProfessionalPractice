@@ -87,9 +87,7 @@ public partial class PrefabPlaceTool : EditorWindow
         //Placement Settings
         GUILayout.BeginVertical("box");
         GUILayout.Label("Placement Settings", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
         EditorGUILayout.PropertyField(propPlacementMask, new GUIContent("Valid Placement Layers", "The tool will only place objects on colliders on these layers."));
-        matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
         //Override prefab layer 
         overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
         if(overridePrefabLayer)
@@ -103,6 +101,14 @@ public partial class PrefabPlaceTool : EditorWindow
         {
             overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
             EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
+        }
+        EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
+        matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
+        autoApplyStaticFlags = EditorGUILayout.Toggle(new GUIContent("Auto Apply Static Flags", "If enabled, static flags will automatically be applied to spawned objects based on the settings below"), autoApplyStaticFlags);
+        if(autoApplyStaticFlags)
+        {
+            staticFlags = (StaticEditorFlags)EditorGUILayout.EnumFlagsField(new GUIContent("Static Flags", "The static flags to apply to spawned objects"), staticFlags);
+            EditorGUILayout.Space();
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
@@ -224,7 +230,7 @@ public partial class PrefabPlaceTool : EditorWindow
     
         EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool \nUp and Down Arrows = Cycle Prefabs Manually ", MessageType.Info);
         EditorGUILayout.Space();
-        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection", MessageType.Info);
+        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection\nF: Toggle Auto Apply Static Flags", MessageType.Info);
         EditorGUILayout.EndScrollView();
 
         if(EditorGUI.EndChangeCheck() && isToolActive)

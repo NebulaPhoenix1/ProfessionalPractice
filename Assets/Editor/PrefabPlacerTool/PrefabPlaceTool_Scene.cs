@@ -193,7 +193,13 @@ public partial class PrefabPlaceTool : EditorWindow
                 Repaint();
                 e.Use();
             }
-
+            //Toggle Auto Apply Static Flags (F)
+            else if(e.keyCode == KeyCode.F && !e.shift)
+            {
+                autoApplyStaticFlags = !autoApplyStaticFlags;
+                Repaint();
+                e.Use();
+            }
         }
         else if (e.type == EventType.KeyUp && e.keyCode == KeyCode.Backspace)
         {
@@ -305,7 +311,7 @@ public partial class PrefabPlaceTool : EditorWindow
         //Draw Hotkey box if enabled
         if(PrefabPlaceToolSettings.ShowHotKeysInScene)
         {
-            GUILayout.BeginArea(new Rect(10, 50, 250, 250), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(10, 50, 250, 260), GUI.skin.box);
             GUIStyle hotKeyText = new GUIStyle(GUI.skin.label);
             hotKeyText.fontSize = 12;
             hotKeyText.normal.textColor = new Color(0.8f,0.8f,0.8f);
@@ -322,6 +328,7 @@ public partial class PrefabPlaceTool : EditorWindow
             GUILayout.Label("R: Toggle Random Rotation", hotKeyText);
             GUILayout.Label("J: Toggle Rotation Snapping", hotKeyText);
             GUILayout.Label("Y: Toggle Random Prefab Selection", hotKeyText);
+            GUILayout.Label("F: Toggle Auto Apply Static Flags", hotKeyText);
             GUILayout.EndArea();
         }
         Handles.EndGUI();
@@ -509,6 +516,11 @@ public partial class PrefabPlaceTool : EditorWindow
         {
             newObj.transform.parent = parentContainer;
         }
+        //Apply auto static flags if enabled
+        if(autoApplyStaticFlags)
+        {
+            SetStaticFlagsRecursievely(newObj, staticFlags);
+        }
         //Overrude layer if enabled
         if(overridePrefabLayer)
         {
@@ -667,11 +679,22 @@ public partial class PrefabPlaceTool : EditorWindow
                 newObj.transform.rotation = finalRotation;
                 if(parentContainer != null) newObj.transform.parent = parentContainer;
                 if(overridePrefabLayer) SetLayerRecursively(newObj, spawnLayer);
+                if(autoApplyStaticFlags) SetStaticFlagsRecursievely(newObj, staticFlags);
                 Undo.RegisterCreatedObjectUndo(newObj, "Painted Prefab");
                 if(preventOverlap) Physics.SyncTransforms(); //Ensure physics engine is up to date before next overlap check
             }
             Undo.CollapseUndoOperations(undoGroup);
             PrepareNextSpawn(); //Prepare next spawn to update ghost object and prefab selection
+        }
+    }
+
+    void SetStaticFlagsRecursievely(GameObject obj, StaticEditorFlags flags)
+    {
+        if(obj == null) return;
+        GameObjectUtility.SetStaticEditorFlags(obj, flags);
+        foreach(Transform child in obj.transform)
+        {
+            SetStaticFlagsRecursievely(child.gameObject, flags);
         }
     }
 }

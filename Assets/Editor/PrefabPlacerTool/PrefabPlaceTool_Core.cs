@@ -21,6 +21,10 @@ public partial class PrefabPlaceTool : EditorWindow
     bool matchSurfaceNormal = true;
     [SerializeField] LayerMask placementMask = ~0; //Default to everything
     [SerializeField] Transform parentContainer = null; //Option to parent all spawned objects under a specific transform for organisation
+
+    //Auto Static Settings
+    bool autoApplyStaticFlags = false;
+    StaticEditorFlags staticFlags = StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.OccluderStatic | StaticEditorFlags.ReflectionProbeStatic;
     
     //Layer override settings
     bool overridePrefabLayer = false;
