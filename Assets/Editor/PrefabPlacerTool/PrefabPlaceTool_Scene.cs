@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using UnityEngine.XR;
 
 
 public partial class PrefabPlaceTool : EditorWindow
@@ -265,19 +266,32 @@ public partial class PrefabPlaceTool : EditorWindow
             else if(hasHit)
             {
                 DrawGridPreview(currentPreviewPosition);
+                Vector3 visualPosition = currentPreviewPosition + (hit.normal * 0.05f); //Offset the preview slightly above the surface to prevent z-fighting
                 if(usePaintBrush)
                 {
-                    Handles.color = PrefabPlaceToolSettings.ValidPreviewColor;
-                    Handles.DrawWireDisc(currentPreviewPosition, hit.normal, brushRadius);
+                    Color brushColor = isBlocked ? PrefabPlaceToolSettings.InvalidPreviewColor : PrefabPlaceToolSettings.ValidPreviewColor;
+                    Handles.color = brushColor;
+                    Handles.DrawWireDisc(visualPosition, hit.normal, brushRadius);
+                    if(isBlocked) Handles.DrawSolidDisc(visualPosition, hit.normal, brushRadius); //Fill in so obvious when brush is blocked
                 }
-                if (preventOverlap && !usePaintBrush)
+                //Individual placement mode
+                else
                 {
-                    Vector3 checkPos = currentPreviewPosition + (hit.normal * overlapRadius);
                     Color activeColor = isBlocked ? PrefabPlaceToolSettings.InvalidPreviewColor : PrefabPlaceToolSettings.ValidPreviewColor;
                     Handles.color = activeColor;
-                    Handles.DrawSolidDisc(checkPos, Vector3.up, overlapRadius);
+                    //Default to a tiny radius so we can still see
+                    float radius = preventOverlap ? overlapRadius : 0.5f;
+                    Handles.DrawSolidDisc(visualPosition, hit.normal, radius);
+                    //Drawing a wiredisc 
+                    activeColor.a = 1f;
                     Handles.color = activeColor;
-                    Handles.DrawWireDisc(checkPos, hit.normal, overlapRadius);
+                    Handles.DrawWireDisc(visualPosition, hit.normal, radius);
+                    //If blockec draw a line out of the surface to ensure the user can see if placement is blocked
+                    if(isBlocked)
+                    {
+                        Handles.DrawLine(visualPosition, visualPosition + (hit.normal * 2f), 3f);
+                    }
+
                 }
             }
         }
