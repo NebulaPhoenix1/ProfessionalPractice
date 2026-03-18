@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using UnityEngine.XR;
+using NUnit.Framework;
 
 
 public partial class PrefabPlaceTool : EditorWindow
@@ -211,6 +212,22 @@ public partial class PrefabPlaceTool : EditorWindow
                 Repaint();
                 e.Use();
             }
+            //Erase filter hot keys
+            //Shift E: Eye dropper tool for filter object
+            else if(e.keyCode == KeyCode.E && e.shift)
+            {
+                SampleEraseTarget(ray);
+                Repaint();
+                e.Use();
+            }
+            //Shift C: Clear filter
+            else if(e.keyCode == KeyCode.C && e.shift)
+            {
+                useTargetErase = false;
+                targetedErasePrefab = null;
+                Repaint();
+                e.Use();
+            }
         }
         else if (e.type == EventType.KeyUp && e.keyCode == KeyCode.Backspace)
         {
@@ -312,7 +329,12 @@ public partial class PrefabPlaceTool : EditorWindow
         //Figure out which tool is currently active for display 
         if(isErasing)
         {
-            toolMode = "Erase Mode";
+            //Differentiate between normal and filtered erase
+            if(useTargetErase && targetedErasePrefab != null)
+            {
+                toolMode = "Erasing: " + targetedErasePrefab.name;
+            }
+            else toolMode = "Erasing All";
             modeColor = PrefabPlaceToolSettings.ErasePreviewColor;
         }
         else if(usePaintBrush)
@@ -335,7 +357,7 @@ public partial class PrefabPlaceTool : EditorWindow
         //Draw Hotkey box if enabled
         if(PrefabPlaceToolSettings.ShowHotKeysInScene)
         {
-            GUILayout.BeginArea(new Rect(10, 50, 250, 260), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(10, 50, 250, 290), GUI.skin.box);
             GUIStyle hotKeyText = new GUIStyle(GUI.skin.label);
             hotKeyText.fontSize = 12;
             hotKeyText.normal.textColor = new Color(0.8f,0.8f,0.8f);
@@ -353,6 +375,9 @@ public partial class PrefabPlaceTool : EditorWindow
             GUILayout.Label("J: Toggle Rotation Snapping", hotKeyText);
             GUILayout.Label("Y: Toggle Random Prefab Selection", hotKeyText);
             GUILayout.Label("F: Toggle Auto Apply Static Flags", hotKeyText);
+            GUILayout.Label("Shift + E: Eyedropper filter", hotKeyText);
+            GUILayout.Label("Shift + C: Clear filter", hotKeyText);
+            GUILayout.Space(5);
             GUILayout.EndArea();
         }
         Handles.EndGUI();
@@ -616,6 +641,14 @@ public partial class PrefabPlaceTool : EditorWindow
                 GameObject objToDelete = col.gameObject;
                 GameObject rootToDelete = objToDelete.transform.root.gameObject; //Get the root object to delete the entire prefab instance
                 GameObject finalTarget = rootToDelete != null ? rootToDelete : objToDelete; //Fallback to the collider's own object if something goes wrong with getting the root
+                //Targeted erase check
+                if(useTargetErase && targetedErasePrefab != null)
+                {
+                    GameObject sourceObject = PrefabUtility.GetCorrespondingObjectFromSource(finalTarget);
+                    //If it does not match our filter skip it
+                    if(sourceObject != targetedErasePrefab) continue;
+                }            
+
                 if(!erasedObjects.Contains(finalTarget))
                 {
                     Undo.DestroyObjectImmediate(finalTarget);
@@ -729,6 +762,32 @@ public partial class PrefabPlaceTool : EditorWindow
         foreach(Transform child in obj.transform)
         {
             SetStaticFlagsRecursievely(child.gameObject, flags);
+        }
+    }
+
+    //Uses a ray and prefab utility to get and set a erase object filter 
+    void SampleEraseTarget(Ray ray)
+    {
+        if(Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, eraseMask, QueryTriggerInteraction.Ignore))
+        {
+            GameObject hitObj = hit.collider.gameObject;
+            //Get root of the hit object in case we hit a leaf or something
+            GameObject rootHit = PrefabUtility.GetOutermostPrefabInstanceRoot(hitObj);
+            GameObject finalTarget = rootHit != null ? rootHit : hitObj;
+            //Find the original project asset the object was spawned from
+            GameObject sourcePrefab = PrefabUtility.GetCorrespondingObjectFromSource(finalTarget);
+            if(sourcePrefab != null)
+            {
+                targetedErasePrefab = sourcePrefab;
+                //Show quick pop up notification saying what the filtered object is
+                SceneView.currentDrawingSceneView.ShowNotification(new GUIContent($"Erase filter set to: {targetedErasePrefab.name}"));
+                useTargetErase = true;
+            }
+            else
+            {
+                //Show quick pop up notification saying what the filtered object is
+                SceneView.currentDrawingSceneView.ShowNotification(new GUIContent($"Target is not a prefab."));
+            }
         }
     }
 }

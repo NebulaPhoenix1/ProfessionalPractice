@@ -195,6 +195,12 @@ public partial class PrefabPlaceTool : EditorWindow
         GUILayout.Label("Erase Settings", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(propEraseMask, new GUIContent("Eraseable Layers", "The tool will only erase objects on colliders on these layers."));
         eraseRadius = EditorGUILayout.Slider(new GUIContent("Erase Radius", "The radius of the area eraser"), eraseRadius, 0.1f, 50f);
+        //Filtered erase
+        useTargetErase = EditorGUILayout.Toggle(new GUIContent("Filtered Erase", "If enabled the eraser will only delete objects that match the selected prefab below"), useTargetErase);
+        if(useTargetErase)
+        {
+            targetedErasePrefab = (GameObject)EditorGUILayout.ObjectField("Selected Prefab", targetedErasePrefab, typeof(GameObject), false);
+        }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
         
@@ -255,7 +261,7 @@ public partial class PrefabPlaceTool : EditorWindow
     
         EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool \nUp and Down Arrows = Cycle Prefabs Manually ", MessageType.Info);
         EditorGUILayout.Space();
-        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection\nF: Toggle Auto Apply Static Flags", MessageType.Info);
+        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection\nF: Toggle Auto Apply Static Flags\n Shift + E: Eyedropper Tool \n Shift + C: Clear Filter", MessageType.Info);
         EditorGUILayout.EndScrollView();
 
         if(EditorGUI.EndChangeCheck() && isToolActive)

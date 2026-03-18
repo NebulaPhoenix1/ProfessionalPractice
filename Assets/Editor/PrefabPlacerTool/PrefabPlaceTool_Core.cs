@@ -42,6 +42,8 @@ public partial class PrefabPlaceTool : EditorWindow
     //Erase mode settings
     [SerializeField] LayerMask eraseMask = ~0; //Default to everything; layers that can be erased when in erase mode
     float eraseRadius = 2.0f;
+    bool useTargetErase = false;
+    GameObject targetedErasePrefab = null; //Stores the original prefab we want to filter 
 
     //Grid Settings
     bool useGrid = false;
