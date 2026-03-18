@@ -19,8 +19,11 @@ public partial class PrefabPlaceTool : EditorWindow
 
     //Placement settings
     bool matchSurfaceNormal = true;
+    bool limitSlope = false;
+    float maxSlopeAngle = 45f; //Default to 45 degree hill
     [SerializeField] LayerMask placementMask = ~0; //Default to everything
     [SerializeField] Transform parentContainer = null; //Option to parent all spawned objects under a specific transform for organisation
+    
 
     //Auto Static Settings
     bool autoApplyStaticFlags = false;
@@ -52,11 +55,17 @@ public partial class PrefabPlaceTool : EditorWindow
     //Randomisation Settings
     bool randomSelection = true; //Whether to randomly select a prefab or if the user can select one with arrow keys
     bool randomRotation = false;
+    bool randomJitter = false;
+    float minDepthJitter = 0.0f;
+    float maxDepthJitter = 0.2f;
+    float nextDepthJitter = 0.0f; //Added to ghost previews to show the user how much jitter will be applied before they place the object
     UnityEngine.Vector3 minRotation = UnityEngine.Vector3.zero;
     UnityEngine.Vector3 maxRotation = new UnityEngine.Vector3(0, 360, 0);
     bool randomScale = false;
     float minScale = 0.8f;
     float maxScale = 1.2f;
+
+
 
     //Paint brush settings
     bool usePaintBrush = false;

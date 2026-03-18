@@ -47,9 +47,18 @@ public partial class PrefabPlaceTool : EditorWindow
                 currentPreviewPosition.z = Mathf.Round(currentPreviewPosition.z / gridSize) * gridSize;
                 currentPreviewPosition.y = snapHeight ? Mathf.Round(currentPreviewPosition.y / gridSize) * gridSize : hit.point.y;
             }
-            
-            // Overlap checking
-            if(preventOverlap)
+
+            // Limit slope if enabled
+            if(limitSlope)
+            {
+                float surfaceAngle = Vector3.Angle(Vector3.up, hit.normal);
+                if(surfaceAngle > maxSlopeAngle)
+                {
+                    isBlocked = true;
+                }
+            }
+            // Overlap checking, only check if not blocked
+            if(preventOverlap && !isBlocked)
             {
                 Vector3 checkPosition = currentPreviewPosition + (hit.normal * overlapRadius);
                 isBlocked = Physics.CheckSphere(checkPosition, overlapRadius, overlapMask);
@@ -65,7 +74,8 @@ public partial class PrefabPlaceTool : EditorWindow
             ghostObject.transform.localScale = Vector3.one * nextScale;
             Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * nextRotation : nextRotation;
             ghostObject.transform.rotation = finalRotation;
-            ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset);
+            //Subtracting (hit.normal * nextDepthJitter) from the position to create a jitter effect that moves the object slightly towards or away from the surface normal, this can help make placements look more natural and less uniform
+            ghostObject.transform.position = currentPreviewPosition + (finalRotation * currentItem.offset) - (hit.normal * nextDepthJitter);
         }
         //Make sure ghost object is hidden if painting
         else if(ghostObject != null)
@@ -360,6 +370,7 @@ public partial class PrefabPlaceTool : EditorWindow
             }
         }
         nextScale = randomScale ? Random.Range(minScale, maxScale) : 1.0f;
+        nextDepthJitter = randomJitter ? Random.Range(minDepthJitter, maxDepthJitter) : 0.0f;
         if(randomRotation)
         {
             nextRotation = Quaternion.Euler(
@@ -510,7 +521,7 @@ public partial class PrefabPlaceTool : EditorWindow
         newObj.transform.rotation = finalRotation;
 
         // Apply Position + Local Offset
-        newObj.transform.position = position + (finalRotation * currentItem.offset);
+        newObj.transform.position = position + (finalRotation * currentItem.offset) - (normal * nextDepthJitter); //Apply depth jitter along the surface normal to add variation to placements
         //Parent to container if set
         if(parentContainer != null)
         {
@@ -645,6 +656,14 @@ public partial class PrefabPlaceTool : EditorWindow
             //Raycast downwards to find height of ground at this random point
             if(Physics.Raycast(raycastOrigin, Vector3.down, out RaycastHit hit, 200f, placementMask, QueryTriggerInteraction.Ignore))
             {
+                if(limitSlope)
+                {
+                    float surfaceAngle = Vector3.Angle(Vector3.up, hit.normal);
+                    if(surfaceAngle > maxSlopeAngle)
+                    {
+                        continue; //Skip this spawn if the slope is too steep
+                    }
+                }
                 //Check for overlap if enabled
                 if(preventOverlap)
                 {
@@ -660,6 +679,7 @@ public partial class PrefabPlaceTool : EditorWindow
                 if(currentItem.prefab == null) continue;
                 //Calculate random rotation and scale
                 float scale = randomScale ? UnityEngine.Random.Range(minScale, maxScale) : 1.0f;
+                float depthJitter = randomJitter ? UnityEngine.Random.Range(minDepthJitter, maxDepthJitter) : 0.0f;
                 Quaternion rotation = nextRotation;
                 if(randomRotation)
                 {
@@ -671,7 +691,7 @@ public partial class PrefabPlaceTool : EditorWindow
                 }
                 //Match surface normal if enabled
                 Quaternion finalRotation = matchSurfaceNormal ? Quaternion.FromToRotation(Vector3.up, hit.normal) * rotation : rotation;
-                Vector3 finalPosition = hit.point + (finalRotation * currentItem.offset);
+                Vector3 finalPosition = hit.point + (finalRotation * currentItem.offset) - (hit.normal * depthJitter); //Apply depth jitter along the surface normal to add variation to placements
                 //Spawn the prefab
                 GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(currentItem.prefab);
                 newObj.transform.position = finalPosition;

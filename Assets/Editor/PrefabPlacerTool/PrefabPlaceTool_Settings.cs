@@ -138,6 +138,19 @@ public class PrefabPlaceToolSettings : EditorWindow
         set => EditorPrefs.SetBool("PrefabPlaceTool_ShowHotKeysInScene", value);
     }
 
+    //What the max jitter is allowed to be
+    public static float MaxJitterLimit
+    {
+        get => EditorPrefs.GetFloat("PrefabPlaceTool_MaxJitterLimit", 2.0f);
+        set => EditorPrefs.SetFloat("PrefabPlaceTool_MaxJitterLimit", value);
+    }
+
+    public static float MaxSlopeAngleLimit
+    {
+        get => EditorPrefs.GetFloat("PrefabPlaceTool_MaxSlopeAngleLimit", 90.0f);
+        set => EditorPrefs.SetFloat("PrefabPlaceTool_MaxSlopeAngleLimit", value);  
+    }
+
     //Settings UI
     [MenuItem("Tools/Prefab Place Tool Settings #%M")] //Shortcut Ctrl/Cmd + Shift + C
     public static void ShowSettings()
@@ -182,6 +195,8 @@ public class PrefabPlaceToolSettings : EditorWindow
         EditorGUILayout.Space();
 
         MaxScaleLimit = EditorGUILayout.FloatField(new GUIContent("Max Scale Limit", "The maximum scale allowed when random scale is enabled"), MaxScaleLimit);
+        MaxJitterLimit = EditorGUILayout.FloatField(new GUIContent("Max Jitter Limit", "The maximum depth jitter allowed when random jitter is enabled"), MaxJitterLimit);
+        MaxSlopeAngleLimit = EditorGUILayout.FloatField(new GUIContent("Max Slope Angle Limit", "The maximum slope angle (in degrees) that allows placement when slope checking is enabled"), MaxSlopeAngleLimit);
 
         GUILayout.BeginVertical("box");
         GUILayout.Label("Preview Colors", EditorStyles.boldLabel);
@@ -193,6 +208,8 @@ public class PrefabPlaceToolSettings : EditorWindow
         if (EditorGUI.EndChangeCheck())
         {
             MaxScaleLimit = Mathf.Max(0.1f, MaxScaleLimit); //Clamp to a minimum value to prevent issues
+            MaxJitterLimit = Mathf.Max(0.1f, MaxJitterLimit); //Clamp to a minimum to prevent issues with negative jitter values
+            MaxSlopeAngleLimit = Mathf.Clamp(MaxSlopeAngleLimit, 0f, 90f); //Clamp between 0 and 90 degrees to prevent issues with slope checking
             ManualRotationAmount = Mathf.Max(1f, ManualRotationAmount); 
             ValidPreviewColor = new Color(ValidPreviewColor.r, ValidPreviewColor.g, ValidPreviewColor.b, Mathf.Clamp01(ValidPreviewColor.a)); //Clamp alpha to 0-1
             InvalidPreviewColor = new Color(InvalidPreviewColor.r, InvalidPreviewColor.g, InvalidPreviewColor.b, Mathf.Clamp01(InvalidPreviewColor.a)); //Clamp alpha to 0-1
@@ -239,6 +256,8 @@ public class PrefabPlaceToolSettings : EditorWindow
             EditorPrefs.DeleteKey("PrefabPlaceTool_RotationSnappingPreset4");
             EditorPrefs.DeleteKey("PrefabPlaceTool_ShowSceneUI");
             EditorPrefs.DeleteKey("PrefabPlaceTool_ShowHotKeysInScene");
+            EditorPrefs.DeleteKey("PrefabPlaceTool_MaxJitterLimit");
+            EditorPrefs.DeleteKey("PrefabPlaceTool_MaxSlopeAngleLimit");
             SceneView.RepaintAll();
         }
     }

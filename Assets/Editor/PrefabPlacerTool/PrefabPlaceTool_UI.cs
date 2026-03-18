@@ -102,8 +102,18 @@ public partial class PrefabPlaceTool : EditorWindow
             overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
             EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
         }
+        //Parent container
         EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
+        //Match surface normal 
         matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
+        //Slope limit
+        limitSlope = EditorGUILayout.Toggle(new GUIContent("Limit Slope", "If enabled, the tool will check the slope of the placement surface and prevent placement if it exceeds the specified angle"), limitSlope);
+        if(limitSlope)
+        {
+            maxSlopeAngle = EditorGUILayout.Slider(new GUIContent("Max Slope Angle", "The maximum slope angle (in degrees) that allows placement"), maxSlopeAngle, 0f, PrefabPlaceToolSettings.MaxSlopeAngleLimit);
+            if(maxSlopeAngle > PrefabPlaceToolSettings.MaxSlopeAngleLimit) maxSlopeAngle = PrefabPlaceToolSettings.MaxSlopeAngleLimit; //Failsafe to prevent user from setting a slope angle that is too high which can cause issues with placement logic
+        }
+        //Auto apply static flags
         autoApplyStaticFlags = EditorGUILayout.Toggle(new GUIContent("Auto Apply Static Flags", "If enabled, static flags will automatically be applied to spawned objects based on the settings below"), autoApplyStaticFlags);
         if(autoApplyStaticFlags)
         {
@@ -160,6 +170,21 @@ public partial class PrefabPlaceTool : EditorWindow
             //Check if maxScale is greater than max scale limit, if so, set it to max scale limit. This prevents errors with the random scale function.
             if(maxScale > PrefabPlaceToolSettings.MaxScaleLimit) maxScale = PrefabPlaceToolSettings.MaxScaleLimit;
         }
+        //Random Jitter Settings
+        randomJitter = EditorGUILayout.Toggle(new GUIContent("Random Depth Jitter", "If enabled, spawned objects will have a random offset applied along the surface normal to add variation to placements"), randomJitter);
+        if (randomJitter)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Depth Jitter Range", GUILayout.Width(100));
+            minDepthJitter = EditorGUILayout.FloatField(minDepthJitter, GUILayout.MaxWidth(50));
+            EditorGUILayout.MinMaxSlider(ref minDepthJitter, ref maxDepthJitter, 0f, PrefabPlaceToolSettings.MaxJitterLimit);
+            maxDepthJitter = EditorGUILayout.FloatField(maxDepthJitter, GUILayout.MaxWidth(50));
+            //Failsafe to prevent user from setting jitter values that are too high which can cause issues with placements
+            if (maxDepthJitter > PrefabPlaceToolSettings.MaxJitterLimit) maxDepthJitter = PrefabPlaceToolSettings.MaxJitterLimit;
+            GUILayout.EndHorizontal();
+        }
+            
+
         GUILayout.EndVertical();
         EditorGUILayout.Space();
 
