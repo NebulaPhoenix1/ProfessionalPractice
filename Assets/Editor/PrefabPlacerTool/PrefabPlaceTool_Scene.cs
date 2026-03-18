@@ -595,13 +595,18 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         if(validIndices.Count == 0) return;
 
+        //List to hold new spawned objects
+        List<GameObject> newObjects = new List<GameObject>();
+        //Group undo operations so if replaced is mashed Ctrl Z is easier
+        Undo.IncrementCurrentGroup();
+        Undo.SetCurrentGroupName("Replace Selected Objects");
+        int undoGroup = Undo.GetCurrentGroup();
+
         foreach(GameObject obj in selectedObjects)
         {
             //Pick random item from pallete based on weight if set
             int randomIndex = GetRandomWeightedPrefabIndex(validIndices);
             PalleteEntry currentItem = prefabPallete[randomIndex];
-            if (currentItem.prefab == null) continue;
-
             GameObject newObj = (GameObject)PrefabUtility.InstantiatePrefab(currentItem.prefab);
             
             // Apply original transform data
@@ -613,8 +618,11 @@ public partial class PrefabPlaceTool : EditorWindow
             newObj.transform.position = obj.transform.position + (newObj.transform.rotation * currentItem.offset);
             
             Undo.RegisterCreatedObjectUndo(newObj, "Replaced Object");
-            Undo.DestroyObjectImmediate(obj);   
+            Undo.DestroyObjectImmediate(obj); 
+            newObjects.Add(newObj);
         }
+        Undo.CollapseUndoOperations(undoGroup);
+        Selection.objects = newObjects.ToArray();
     }
     
 

@@ -261,7 +261,7 @@ public partial class PrefabPlaceTool : EditorWindow
     
         EditorGUILayout.HelpBox("Scene View Controls:\nSPACE = Spawn Object\n[ and ] = Rotate Object manually\nSHIFT + BACKSPACE = Erase Tool \nUp and Down Arrows = Cycle Prefabs Manually ", MessageType.Info);
         EditorGUILayout.Space();
-        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection\nF: Toggle Auto Apply Static Flags\n Shift + E: Eyedropper Tool \n Shift + C: Clear Filter", MessageType.Info);
+        EditorGUILayout.HelpBox("G: Toggle Grid\nN: Toggle Match Normal\nO: Toggle Prevent Overlap\nP: Toggle Paint Brush\nL: Toggle Random Scale\nR: Toggle Random Rotation\nJ: Toggle Rotation Snapping\nY: Toggle Random Prefab Selection\nF: Toggle Auto Apply Static Flags\nShift + E: Eyedropper Tool \nShift + C: Clear Filter", MessageType.Info);
         EditorGUILayout.EndScrollView();
 
         if(EditorGUI.EndChangeCheck() && isToolActive)
