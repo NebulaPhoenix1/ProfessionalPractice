@@ -564,7 +564,15 @@ public partial class PrefabPlaceTool : EditorWindow
         //Parent to container if set
         if(parentContainer != null)
         {
-            newObj.transform.parent = parentContainer;
+            if(autoGroupPrefabs)
+            {
+                Transform group = GetOrCreateGroup(currentItem.prefab.name);
+                newObj.transform.parent = group;
+            }
+            else
+            {
+                newObj.transform.parent = parentContainer;
+            }
         }
         //Apply auto static flags if enabled
         if(autoApplyStaticFlags)
@@ -752,7 +760,18 @@ public partial class PrefabPlaceTool : EditorWindow
                 newObj.transform.position = finalPosition;
                 newObj.transform.localScale = Vector3.one * scale;
                 newObj.transform.rotation = finalRotation;
-                if(parentContainer != null) newObj.transform.parent = parentContainer;
+                if(parentContainer != null)
+                {
+                    if(autoGroupPrefabs)
+                    {
+                        Transform group = GetOrCreateGroup(currentItem.prefab.name);
+                        newObj.transform.parent = group;
+                    }
+                    else
+                    {
+                        newObj.transform.parent = parentContainer;
+                    }
+                } 
                 if(overridePrefabLayer) SetLayerRecursively(newObj, spawnLayer);
                 if(autoApplyStaticFlags) SetStaticFlagsRecursievely(newObj, staticFlags);
                 Undo.RegisterCreatedObjectUndo(newObj, "Painted Prefab");
@@ -797,5 +816,24 @@ public partial class PrefabPlaceTool : EditorWindow
                 SceneView.currentDrawingSceneView.ShowNotification(new GUIContent($"Target is not a prefab."));
             }
         }
+    }
+
+    //Returns the auto parent of the object with groupName
+    //This method is used to ensure all of mushroom01 have the same parent and all mushroom02 have a different parent
+    Transform GetOrCreateGroup(string groupName)
+    {
+        //Only return something if parent container is set
+        if(parentContainer == null) return null;
+        //Check if a child with the name already exists
+        Transform existingGroup = parentContainer.Find(groupName);
+        if(existingGroup != null) return existingGroup;
+        //If it does not exist, create one
+        GameObject newGroup = new GameObject(groupName);
+        newGroup.transform.parent = parentContainer;
+        newGroup.transform.localPosition = Vector3.zero;
+        //Register new group with undo 
+        Undo.RegisterCreatedObjectUndo(newGroup, "Created Group");
+        return newGroup.transform;
+        
     }
 }

@@ -130,32 +130,46 @@ public partial class PrefabPlaceTool : EditorWindow
         overridePrefabLayer = EditorGUILayout.Toggle(new GUIContent("Override Prefab Layer", "If enabled, all spawned objects will be set to the specified layer"), overridePrefabLayer);
         if(overridePrefabLayer)
         {
+            EditorGUI.indentLevel++;
             spawnLayer = EditorGUILayout.LayerField(new GUIContent("Spawn Layer", "The layer to set spawned objects to"), spawnLayer);
+            EditorGUI.indentLevel--;
             EditorGUILayout.Space();
         }
         //Overlap prevention settings
         preventOverlap = EditorGUILayout.Toggle(new GUIContent("Prevent Overlap", "Stops spawning if there are existing colliders within the overlap radius"), preventOverlap);
         if(preventOverlap)
         {
+            EditorGUI.indentLevel++;
             overlapRadius = EditorGUILayout.Slider(new GUIContent("Overlap Check Radius", "The radius to check for overlapping colliders"), overlapRadius, 0.1f, 10.0f);
             EditorGUILayout.PropertyField(propOverlapMask, new GUIContent("Overlap Check Layers", "Layers to check for collisions. Exclude your ground layer."));
+            EditorGUI.indentLevel--;
         }
         //Parent container
         EditorGUILayout.PropertyField(propParentContainer, new GUIContent("Parent Container", "If set, all spawned objects will be parented under this transform for organisation"));
+        if(parentContainer != null)
+        {
+            EditorGUI.indentLevel++;
+            autoGroupPrefabs = EditorGUILayout.Toggle(new GUIContent("Auto Group Prefabs", "If enabled, spawened objects will be automactially parented into folders based on prefab name"), autoGroupPrefabs);  
+            EditorGUI.indentLevel--;
+        }
         //Match surface normal 
         matchSurfaceNormal = EditorGUILayout.Toggle(new GUIContent("Match Surface Normal", "If enabled, spawned objects will be rotated to match the surface normal of the placement surface"), matchSurfaceNormal);
         //Slope limit
         limitSlope = EditorGUILayout.Toggle(new GUIContent("Limit Slope", "If enabled, the tool will check the slope of the placement surface and prevent placement if it exceeds the specified angle"), limitSlope);
         if(limitSlope)
         {
+            EditorGUI.indentLevel++;
             maxSlopeAngle = EditorGUILayout.Slider(new GUIContent("Max Slope Angle", "The maximum slope angle (in degrees) that allows placement"), maxSlopeAngle, 0f, PrefabPlaceToolSettings.MaxSlopeAngleLimit);
+            EditorGUI.indentLevel--;
             if(maxSlopeAngle > PrefabPlaceToolSettings.MaxSlopeAngleLimit) maxSlopeAngle = PrefabPlaceToolSettings.MaxSlopeAngleLimit; //Failsafe to prevent user from setting a slope angle that is too high which can cause issues with placement logic
         }
         //Auto apply static flags
         autoApplyStaticFlags = EditorGUILayout.Toggle(new GUIContent("Auto Apply Static Flags", "If enabled, static flags will automatically be applied to spawned objects based on the settings below"), autoApplyStaticFlags);
         if(autoApplyStaticFlags)
         {
+            EditorGUI.indentLevel++;
             staticFlags = (StaticEditorFlags)EditorGUILayout.EnumFlagsField(new GUIContent("Static Flags", "The static flags to apply to spawned objects"), staticFlags);
+            EditorGUI.indentLevel--;
             EditorGUILayout.Space();
         }
         GUILayout.EndVertical();
@@ -171,9 +185,12 @@ public partial class PrefabPlaceTool : EditorWindow
         usePaintBrush = EditorGUILayout.Toggle(new GUIContent("Use Paint Brush", "If enabled, the tool will spawn multiple prefabs in a brush pattern while the mouse button is held down"), usePaintBrush);
         if(usePaintBrush)
         {
+            EditorGUI.indentLevel++;
+            //Brush Settings
             brushRadius = EditorGUILayout.Slider(new GUIContent("Brush Radius", "The radius of the paint brush"), brushRadius, 0.1f, 50f);
             brushDensity = EditorGUILayout.IntSlider(new GUIContent("Brush Density", "How many prefabs to spawn per brush stroke"), brushDensity, 1, 20);
             brushSpacing = EditorGUILayout.Slider(new GUIContent("Brush Spacing", "Minimum distance between spawned prefabs when using the paint brush"), brushSpacing, 0.1f, 10f);
+            EditorGUI.indentLevel--;
             EditorGUILayout.HelpBox("Hold Left Click and Drag in the Scene View to paint prefabs. The brush will spawn prefabs in a radius around the mouse cursor, the density and spacing of the prefabs can be adjusted with the settings above.", MessageType.Info);
         }
         GUILayout.EndVertical();
@@ -193,18 +210,22 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         if(randomRotation)
         {
+            EditorGUI.indentLevel++;
             minRotation = EditorGUILayout.Vector3Field(new GUIContent("Min Rotation", "The minimum rotation to apply when randomising"), minRotation);
             maxRotation = EditorGUILayout.Vector3Field(new GUIContent("Max Rotation", "The maximum rotation to apply when randomising"), maxRotation);
+            EditorGUI.indentLevel--;
         }
         randomScale = EditorGUILayout.Toggle(new GUIContent("Random Scale", "If enabled, spawned objects will be scaled randomly within the specified range"), randomScale);
         if(randomScale)
         {
+            EditorGUI.indentLevel++;
             GUILayout.BeginHorizontal();
             GUILayout.Label("Scale Range");
             minScale = EditorGUILayout.FloatField(minScale, GUILayout.MaxWidth(50));
             EditorGUILayout.MinMaxSlider(ref minScale, ref maxScale, 0.1f, PrefabPlaceToolSettings.MaxScaleLimit);
             maxScale = EditorGUILayout.FloatField(maxScale, GUILayout.MaxWidth(50));
             GUILayout.EndHorizontal();
+            EditorGUI.indentLevel--;
             //Check if maxScale is greater than max scale limit, if so, set it to max scale limit. This prevents errors with the random scale function.
             if(maxScale > PrefabPlaceToolSettings.MaxScaleLimit) maxScale = PrefabPlaceToolSettings.MaxScaleLimit;
         }
@@ -212,6 +233,7 @@ public partial class PrefabPlaceTool : EditorWindow
         randomJitter = EditorGUILayout.Toggle(new GUIContent("Random Depth Jitter", "If enabled, spawned objects will have a random offset applied along the surface normal to add variation to placements"), randomJitter);
         if (randomJitter)
         {
+            EditorGUI.indentLevel++;
             GUILayout.BeginHorizontal();
             GUILayout.Label("Depth Jitter Range", GUILayout.Width(100));
             minDepthJitter = EditorGUILayout.FloatField(minDepthJitter, GUILayout.MaxWidth(50));
@@ -220,13 +242,10 @@ public partial class PrefabPlaceTool : EditorWindow
             //Failsafe to prevent user from setting jitter values that are too high which can cause issues with placements
             if (maxDepthJitter > PrefabPlaceToolSettings.MaxJitterLimit) maxDepthJitter = PrefabPlaceToolSettings.MaxJitterLimit;
             GUILayout.EndHorizontal();
+            EditorGUI.indentLevel--;
         }
-            
-
         GUILayout.EndVertical();
         EditorGUILayout.Space();
-
-        
 
         //Erase Settings
         GUILayout.BeginVertical("box");
@@ -237,7 +256,9 @@ public partial class PrefabPlaceTool : EditorWindow
         useTargetErase = EditorGUILayout.Toggle(new GUIContent("Filtered Erase", "If enabled the eraser will only delete objects that match the selected prefab below"), useTargetErase);
         if(useTargetErase)
         {
+            EditorGUI.indentLevel++;
             targetedErasePrefab = (GameObject)EditorGUILayout.ObjectField("Selected Prefab", targetedErasePrefab, typeof(GameObject), false);
+            EditorGUI.indentLevel--;
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
@@ -251,6 +272,8 @@ public partial class PrefabPlaceTool : EditorWindow
         //Grid settings only show if the grid is enabled
         if(useGrid)
         {
+            EditorGUI.indentLevel++;
+            //Grid Size
             gridSize = EditorGUILayout.Slider(new GUIContent("Grid Size", "The size of the grid to snap to"), gridSize, 0.1f, PrefabPlaceToolSettings.MaxGridSize);
             //Preset buttons
             GUILayout.BeginHorizontal();
@@ -261,6 +284,7 @@ public partial class PrefabPlaceTool : EditorWindow
             snapHeight = EditorGUILayout.Toggle(new GUIContent("Snap to Ground Height", "If enabled, objects will be snapped to the height of the grid"), snapHeight);
             //Check if grid size is greater than max grid size, if so, set it to max grid size. This prevents errors with the grid drawing function.
             if(gridSize > PrefabPlaceToolSettings.MaxGridSize) gridSize = PrefabPlaceToolSettings.MaxGridSize;
+            EditorGUI.indentLevel--;
         }
         GUILayout.EndVertical();
         EditorGUILayout.Space();
@@ -276,6 +300,8 @@ public partial class PrefabPlaceTool : EditorWindow
         }
         if(snapRotation)
         {
+            EditorGUI.indentLevel++;
+            //Snap Angle
             snapAngle = EditorGUILayout.FloatField(new GUIContent("Snap Angle", "The angle (degrees) increments to snap rotation to"), snapAngle);
             if(snapAngle < 0.1f) snapAngle = 0.1f; //Minimum snap angle of 0.1 degrees to prevent divide by zero errors
             GUILayout.BeginHorizontal();
@@ -283,6 +309,7 @@ public partial class PrefabPlaceTool : EditorWindow
             if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset2.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset2;
             if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset3.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset3;
             if(GUILayout.Button(PrefabPlaceToolSettings.RotationSnappingPreset4.ToString()+"°")) snapAngle = PrefabPlaceToolSettings.RotationSnappingPreset4;
+            EditorGUI.indentLevel--;
             GUILayout.EndHorizontal();
         }
         GUILayout.EndVertical();

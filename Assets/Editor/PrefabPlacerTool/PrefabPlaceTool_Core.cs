@@ -27,6 +27,7 @@ public partial class PrefabPlaceTool : EditorWindow
     float maxSlopeAngle = 45f; //Default to 45 degree hill
     [SerializeField] LayerMask placementMask = ~0; //Default to everything
     [SerializeField] Transform parentContainer = null; //Option to parent all spawned objects under a specific transform for organisation
+    bool autoGroupPrefabs = false; //Whether or not to auto parent all of the same prefab to their own parent (which is a child of parentContainer above)
     
 
     //Auto Static Settings
