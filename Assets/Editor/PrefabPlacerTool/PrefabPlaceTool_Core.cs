@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using Codice.Client.GameUI.Explorer;
 
 //Partial classes to define a class over multiple scripts
 public partial class PrefabPlaceTool : EditorWindow
@@ -8,6 +9,9 @@ public partial class PrefabPlaceTool : EditorWindow
     bool isToolActive = false;
     bool isErasing = false;
     [SerializeField] List<PalleteEntry> prefabPallete = new List<PalleteEntry>();
+
+    //The loaded palette save
+    PrefabPlaceToolPalettePreset activePreset = null;
     
     //These let us draw the object list in Inspector
     SerializedObject serializedObject;

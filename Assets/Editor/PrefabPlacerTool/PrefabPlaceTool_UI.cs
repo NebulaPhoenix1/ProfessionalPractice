@@ -2,12 +2,13 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.VersionControl;
 
 public partial class PrefabPlaceTool : EditorWindow
 {
     Vector2 scrollPosition;
 
-   //The UI Window with all the options we can change
+    //The UI Window with all the options we can change
     void OnGUI()
     {
         GUILayout.Label("Prefab Placer Tool", EditorStyles.boldLabel);
@@ -27,10 +28,47 @@ public partial class PrefabPlaceTool : EditorWindow
 
         //Prefab Pallete 
         serializedObject.Update();
+        //Prefab Palette UI
+        GUILayout.BeginVertical("box");
+        GUILayout.Label("Prefab Palette Preset", EditorStyles.boldLabel);
+        activePreset = (PrefabPlaceToolPalettePreset)EditorGUILayout.ObjectField("Active Palette Preset", activePreset, typeof(PrefabPlaceToolPalettePreset), false);
+        GUILayout.BeginHorizontal();
+        //Disable load buttons if no preset is provided
+        GUI.enabled = activePreset != null;
+        if(GUILayout.Button("Load from preset"))
+        {
+            LoadPaletteFromPreset();
+        }
+        GUI.enabled = true;//Re enable rest of the UI
+        string saveButtonText = activePreset != null ? "Save (Overwrite)" : "Save as New Preset";
+        if(GUILayout.Button(saveButtonText))
+        {
+            SavePaletteToPreset();
+        }
+    
+        GUILayout.EndHorizontal();
+
+        //Clear button to empty current tool palette
+        GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+        if(GUILayout.Button("Clear Palette"))
+        {
+            //Confirm clear button
+            if(EditorUtility.DisplayDialog("Clear Palette?", "Are you sure you want to clear the current working palette?", "Yes", "Cancel"));
+            {
+                Undo.RecordObject(this, "Clear Palette");
+                activePreset = null;
+                prefabPallete.Clear();
+            }
+        }
+        GUI.backgroundColor = Color.white;
+        GUILayout.EndVertical();
+        EditorGUILayout.Space();
+
+
         //Custom inspector for prefab pallete list
         GUILayout.BeginVertical("box");
-        GUILayout.Label("Prefab Pallete", EditorStyles.boldLabel);
-        Undo.RecordObject(this, "Modify Prefab Pallete"); //Allows undo/redo for changes to the prefab pallete
+        GUILayout.Label("Prefab Palette", EditorStyles.boldLabel);
+        Undo.RecordObject(this, "Modify Prefab Palette"); //Allows undo/redo for changes to the prefab pallete
         for (int i = 0; i < prefabPallete.Count; i++)
         {
             GUILayout.BeginHorizontal();
@@ -270,4 +308,95 @@ public partial class PrefabPlaceTool : EditorWindow
             PrepareNextSpawn();
         }
     }
+
+    void LoadPaletteFromPreset()
+    {
+        //Return if this gets called with no active preset, but this should never happen
+        if(activePreset == null) return;
+        //Set up undo
+        Undo.RecordObject(this, "Load Palette Preset");
+        prefabPallete.Clear();
+        //Keep track of if anything from the preset is null so we can log a message to console if so
+        int missingCount = 0;
+        foreach(PalleteEntry entry in activePreset.prefabPallete)
+        {
+            //If current entry is null, skip 
+            if(entry.prefab == null)
+            {
+                missingCount++;
+                continue;
+            }
+            //Make a copy of the asset to the palette 
+            PalleteEntry newPrefab = new PalleteEntry();
+            newPrefab.prefab = entry.prefab;
+            newPrefab.offset = entry.offset;
+            newPrefab.weight = entry.weight;
+            prefabPallete.Add(newPrefab);
+        }
+        //Reset spawn selection logic
+        PrepareNextSpawn();
+        //If any null prefabs, notify user
+        if(missingCount > 0)
+        {
+            //$ to say Hey, im gonna include variables in this string so we don't have to concatenate with +
+            Debug.LogWarning($"[Prefab Place Tool] Loaded Preset' {activePreset.name} ' but {missingCount} prefab(s) were missing from the project and skipped.");
+            SceneView.currentDrawingSceneView?.ShowNotification(new GUIContent($"Loaded Preset (Skipped {missingCount} Missing)"));
+        }
+    }
+    void SavePaletteToPreset()
+    {
+        //Create new file if one is not set
+        if(activePreset == null)
+        {
+            CreateNewPreset();
+            return;
+        }
+        if(EditorUtility.DisplayDialog("Overwrite Preset?", $"Are you sure you want to overwrite the {activePreset.name} preset with the current palette?", "Yes", "Cancel"));
+        {
+            Undo.RecordObject(this, "Save Palette Preset");
+            activePreset.prefabPallete.Clear();
+            foreach(PalleteEntry entry in prefabPallete)
+            {
+                PalleteEntry newEntry = new PalleteEntry();
+                newEntry.prefab = entry.prefab;
+                newEntry.offset = entry.offset;
+                newEntry.weight = entry.weight;
+                activePreset.prefabPallete.Add(newEntry);
+            }
+            EditorUtility.SetDirty(activePreset);
+            AssetDatabase.SaveAssets();
+            SceneView.currentDrawingSceneView?.ShowNotification(new GUIContent($"Saved: {activePreset.name}"));
+
+        }
+    }
+    void CreateNewPreset()
+    {
+        //Open a save window thats locked to the unity project folder
+        string path = EditorUtility.SaveFilePanelInProject(
+            "Create New Palette Preset",
+            "New Prefab Palette",
+            "asset",
+            "Choose a location to store your asset");
+        //Check if the user hits cancel, if so abort
+        if(string.IsNullOrEmpty(path)) return;
+        //Create a blank file in memory
+        PrefabPlaceToolPalettePreset newPreset = ScriptableObject.CreateInstance<PrefabPlaceToolPalettePreset>();
+        //Copy the current palette to this new memory file
+        foreach(PalleteEntry entry in prefabPallete)
+        {
+            PalleteEntry newEntry = new PalleteEntry();
+            newEntry.prefab = entry.prefab;
+            newEntry.offset = entry.offset;
+            newEntry.weight = entry.weight;
+            newPreset.prefabPallete.Add(newEntry);
+        }
+        //Write the file in memory to disk
+        AssetDatabase.CreateAsset(newPreset, path);
+        AssetDatabase.SaveAssets();
+        //Set this new file to be active
+        activePreset = newPreset;
+        SceneView.currentDrawingSceneView?.ShowNotification(new GUIContent($"Created and Saved: {activePreset.name}" ));
+    }
 }
+
+
